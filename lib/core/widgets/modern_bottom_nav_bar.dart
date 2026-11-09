@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// شريط التنقل السفلي المشترك بين الـ Shells
+/// شريط التنقل السفلي المشترك بين الـ Shells مع دعم الشارات (Badges)
 class ModernBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
@@ -49,8 +49,13 @@ class ModernBottomNavBar extends StatelessWidget {
 class BottomNavItem {
   final IconData icon;
   final String label;
+  final int badgeCount;
 
-  const BottomNavItem({required this.icon, required this.label});
+  const BottomNavItem({
+    required this.icon,
+    required this.label,
+    this.badgeCount = 0,
+  });
 }
 
 class _NavItem extends StatelessWidget {
@@ -87,15 +92,54 @@ class _NavItem extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(item.icon,
-                color: isSelected ? primaryColor : Colors.grey[400], size: 24),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  item.icon,
+                  color: isSelected ? primaryColor : Colors.grey[400],
+                  size: 24,
+                ),
+                if (item.badgeCount > 0)
+                  Positioned(
+                    top: -4,
+                    right: -6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade800,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        item.badgeCount > 99 ? '99+' : '${item.badgeCount}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             if (isSelected) ...[
               const SizedBox(width: 8),
-              Text(item.label,
-                  style: TextStyle(
-                      color: primaryColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14)),
+              Text(
+                item.label,
+                style: TextStyle(
+                  color: primaryColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
             ],
           ],
         ),
@@ -103,4 +147,3 @@ class _NavItem extends StatelessWidget {
     );
   }
 }
-

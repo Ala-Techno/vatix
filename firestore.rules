@@ -26,14 +26,23 @@ service cloud.firestore {
       return signedIn() && me().role == 'retailer' && me().status == 'active';
     }
 
+    // هل العملة المدخلة ضمن العملات الثلاث المعتمدة في النظام؟
+    function currencyOk(c) {
+      return c in ['YER', 'SAR', 'USD'];
+    }
+
     // ─────────────────────────────────────────────
     // invites/{code} — أكواد الدعوة
     // ─────────────────────────────────────────────
     
    match /invites/{code} {
 
-      // السماح بالقراءة الفردية والجماعية للتحقق من الكود أثناء التسجيل
-      allow get, list: if true;
+      // قراءة كود محدد بـ get مسموحة للتحقق من الكود أثناء التسجيل
+      allow get: if true;
+
+      // [E1] المورد فقط يستطيع list على أكواده لعرضها في شاشة العملاء وتدويرها
+      allow list: if isWholesaler()
+        && resource.data.wholesalerId == request.auth.uid;
 
       // المورد ينشئ أو يعدّل كوداً يخصّه هو فقط
       allow create, update: if isWholesaler()
@@ -89,8 +98,26 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────
+    // products/{id} — المنتجات
+    // ─────────────────────────────────────────────
+    match /products/{id} {
+      // المورد يقرأ منتجاته، والتاجر النشط يقرأ فقط منتجات مورده
+      allow read: if isWholesaler() && resource.data.wholesalerId == request.auth.uid
+                  || isActiveRetailer() && resource.data.wholesalerId == me().wholesalerId;
+
+      // المورد ينشئ منتجاً يخصّه فقط، مع التحقق من أن العملة صحيحة (YER / SAR / USD)
+      allow create: if isWholesaler()
+        && request.resource.data.wholesalerId == request.auth.uid
+        && currencyOk(request.resource.data.currency);
+
+      // المورد يعدّل أو يحذف منتجاته الخاصة فقط
+      allow update, delete: if isWholesaler()
+        && resource.data.wholesalerId == request.auth.uid;
+    }
+
+    // ─────────────────────────────────────────────
     // قاعدة افتراضية — رفض كل ما لم يُذكر صراحةً
-    // (products / orders / ledger / accounts تُضاف في مراحل لاحقة)
+    // (orders / ledger / accounts تُضاف في مراحل لاحقة)
     // ─────────────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;

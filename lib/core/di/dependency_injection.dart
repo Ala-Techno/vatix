@@ -16,10 +16,15 @@ import '../../features/auth/domain/usecases/register_retailer_use_case.dart';
 import '../../features/auth/domain/usecases/reset_password_use_case.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 
+// --- Customers Feature ---
+import '../../features/customers/data/datasources/customers_remote_data_source.dart';
+import '../../features/customers/data/repositories/customers_repository_impl.dart';
+import '../../features/customers/domain/repositories/customers_repository.dart';
+import '../../features/customers/presentation/providers/customers_provider.dart';
+
 final getIt = GetIt.instance;
 
-/// M1: تسجيلات Auth الكاملة.
-/// الميزات الجديدة (customers / products / orders / ledger) تُضاف مع كل Milestone.
+/// تسجيلات الحقن لـ Vatix (Feature-First)
 Future<void> setupGetIt() async {
   // ── 1. Local storage ─────────────────────────────────────────────────────
   final sharedPreferences = await SharedPreferences.getInstance();
@@ -62,7 +67,7 @@ Future<void> setupGetIt() async {
     () => ResetPasswordUseCase(getIt<AuthRepository>()),
   );
 
-  // ── 6. AuthProvider — Singleton (يُنشأ مرة واحدة في جذر التطبيق) ─────────
+  // ── 6. AuthProvider — Singleton (في جذر التطبيق) ─────────────────────────
   getIt.registerLazySingleton<AuthProvider>(
     () => AuthProvider(
       authRepository: getIt<AuthRepository>(),
@@ -70,6 +75,23 @@ Future<void> setupGetIt() async {
       logoutUseCase: getIt<LogoutUseCase>(),
       registerRetailerUseCase: getIt<RegisterRetailerUseCase>(),
       resetPasswordUseCase: getIt<ResetPasswordUseCase>(),
+    ),
+  );
+
+  // ── 7. Customers Feature ─────────────────────────────────────────────────
+  getIt.registerLazySingleton<CustomersRemoteDataSource>(
+    () => CustomersRemoteDataSourceImpl(
+      firestore: getIt<FirebaseFirestore>(),
+    ),
+  );
+  getIt.registerLazySingleton<CustomersRepository>(
+    () => CustomersRepositoryImpl(
+      remoteDataSource: getIt<CustomersRemoteDataSource>(),
+    ),
+  );
+  getIt.registerFactory<CustomersProvider>(
+    () => CustomersProvider(
+      repository: getIt<CustomersRepository>(),
     ),
   );
 }

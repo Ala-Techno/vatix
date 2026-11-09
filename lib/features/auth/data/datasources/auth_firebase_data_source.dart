@@ -118,15 +118,6 @@ class AuthFirebaseDataSourceImpl implements AuthRemoteDataSource {
         .doc(cleanInviteCode)
         .get();
 
-
-      // جلب كل المستندات في كولكشن invites وفحصها
-    final allInvites = await _firestore.collection('invites').get();
-    print('DEBUG_TOTAL: Found ${allInvites.docs.length} documents in invites collection');
-
-    for (var doc in allInvites.docs) {
-    print('DEBUG_DOC: ID -> [${doc.id}], Data -> ${doc.data()}');
-    }
-
     if (kDebugMode) {
       debugPrint('VATIX_REGISTER: Invite document exists? -> ${inviteDoc.exists}');
       if (inviteDoc.exists) {

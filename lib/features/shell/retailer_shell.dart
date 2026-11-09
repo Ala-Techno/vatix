@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vatix/core/di/dependency_injection.dart';
 import 'package:vatix/core/widgets/modern_bottom_nav_bar.dart';
 import 'package:vatix/features/auth/presentation/providers/auth_provider.dart';
+import 'package:vatix/features/customers/presentation/providers/customers_provider.dart';
+import 'package:vatix/features/customers/presentation/screens/customers_screen.dart';
 
 /// Shell التاجر — 4 تبويبات (الكتالوج، السلة، طلباتي، حسابي)
 class RetailerShell extends StatefulWidget {
@@ -92,35 +95,52 @@ class _RetailerShellState extends State<RetailerShell> {
 }
 
 /// Shell المورد — 5 تبويبات (الرئيسية، المنتجات، الطلبات، العملاء، الدفتر)
-class WholesalerShell extends StatefulWidget {
+class WholesalerShell extends StatelessWidget {
   const WholesalerShell({super.key});
 
   @override
-  State<WholesalerShell> createState() => _WholesalerShellState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider<CustomersProvider>(
+      create: (_) => getIt<CustomersProvider>(),
+      child: const _WholesalerShellContent(),
+    );
+  }
 }
 
-class _WholesalerShellState extends State<WholesalerShell> {
+class _WholesalerShellContent extends StatefulWidget {
+  const _WholesalerShellContent();
+
+  @override
+  State<_WholesalerShellContent> createState() => _WholesalerShellContentState();
+}
+
+class _WholesalerShellContentState extends State<_WholesalerShellContent> {
   int _currentIndex = 0;
 
-  static const _items = [
-    BottomNavItem(icon: Icons.dashboard_outlined, label: 'الرئيسية'),
-    BottomNavItem(icon: Icons.inventory_2_outlined, label: 'المنتجات'),
-    BottomNavItem(icon: Icons.list_alt_outlined, label: 'الطلبات'),
-    BottomNavItem(icon: Icons.people_outline, label: 'العملاء'),
-    BottomNavItem(icon: Icons.book_outlined, label: 'الدفتر'),
-  ];
-
   static final _screens = [
-    _Placeholder(label: 'لوحة التحكم', icon: Icons.dashboard_outlined),
-    _Placeholder(label: 'إدارة المنتجات', icon: Icons.inventory_2_outlined),
-    _Placeholder(label: 'الطلبات الواردة', icon: Icons.list_alt_outlined),
-    _Placeholder(label: 'إدارة العملاء', icon: Icons.people_outline),
-    _Placeholder(label: 'دفتر الديون', icon: Icons.book_outlined),
+    const _Placeholder(label: 'لوحة التحكم', icon: Icons.dashboard_outlined),
+    const _Placeholder(label: 'إدارة المنتجات', icon: Icons.inventory_2_outlined),
+    const _Placeholder(label: 'الطلبات الواردة', icon: Icons.list_alt_outlined),
+    const CustomersScreen(),
+    const _Placeholder(label: 'دفتر الديون', icon: Icons.book_outlined),
   ];
 
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
+    final customersProvider = context.watch<CustomersProvider>();
+
+    final items = [
+      const BottomNavItem(icon: Icons.dashboard_outlined, label: 'الرئيسية'),
+      const BottomNavItem(icon: Icons.inventory_2_outlined, label: 'المنتجات'),
+      const BottomNavItem(icon: Icons.list_alt_outlined, label: 'الطلبات'),
+      BottomNavItem(
+        icon: Icons.people_outline,
+        label: 'العملاء',
+        badgeCount: customersProvider.pendingCount,
+      ),
+      const BottomNavItem(icon: Icons.book_outlined, label: 'الدفتر'),
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -151,7 +171,7 @@ class _WholesalerShellState extends State<WholesalerShell> {
       body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: ModernBottomNavBar(
         currentIndex: _currentIndex,
-        items: _items,
+        items: items,
         onTap: (i) => setState(() => _currentIndex = i),
       ),
     );
