@@ -1,52 +1,37 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:vatix/core/errors/api_result.dart';
 import 'package:vatix/core/utils/unit.dart';
 import '../entities/user_entity.dart';
 
-/// [AuthRepository] — Domain contract for all authentication operations.
-/// Pure Dart. No dependencies on Data or Presentation layers.
+/// [AuthRepository] — عقد Domain لكل عمليات المصادقة.
+/// Pure Dart — لا اعتماد على Data أو Presentation.
 abstract class AuthRepository {
-  /// Authenticates the user with the backend.
-  /// Returns [UserEntity] on success or a [Failure] on error.
-  Future<ApiResult<UserEntity>> login({
+  /// تسجيل الدخول
+  Future<ApiResult<UserEntity>> signIn({
     required String email,
     required String password,
   });
 
-  /// Registers a new user account.
-  Future<ApiResult<UserEntity>> register({
-    required String firstName,
-    required String lastName,
+  /// تسجيل تاجر جديد بكود دعوة
+  Future<ApiResult<UserEntity>> registerRetailer({
     required String email,
     required String password,
+    required String businessName,
+    required String ownerName,
     required String phone,
+    required String city,
+    required String inviteCode,
   });
 
-/// Sends a password reset email to the user.
-  Future<ApiResult<Unit>> sendPasswordResetEmail(String email);
-  
-  /// Clears the user session from local storage.
-  /// Called by the Logout flow.
-  Future<void> logout();
+  /// تسجيل الخروج
+  Future<void> signOut();
 
-  // ═══════════════════════════════════════════════════════════════════
-  //  PRODUCTION SERVER — Extended Repository Contract (Commented)
-  // ═══════════════════════════════════════════════════════════════════
-  //
-  // /// Registers a new user account.
-  // Future<ApiResult<UserEntity>> register({
-  //   required String name,
-  //   required String email,
-  //   required String password,
-  //   required String phone,
-  // });
-  //
-  // /// Refreshes the access token using the stored refresh token.
-  // Future<ApiResult<UserEntity>> refreshToken();
-  //
-  // /// Sends a password reset email.
-  // Future<ApiResult<void>> forgotPassword({required String email});
-  //
-  // /// Checks if the current session token is still valid.
-  // Future<bool> isSessionValid();
-  // ═══════════════════════════════════════════════════════════════════
+  /// إرسال رابط إعادة تعيين كلمة المرور
+  Future<ApiResult<Unit>> sendPasswordResetEmail(String email);
+
+  /// Stream لمستند users/{uid} من Firestore (يستخدمه AuthProvider)
+  Stream<DocumentSnapshot<Map<String, dynamic>>> watchUserDoc(String uid);
+
+  /// Stream لحالة Auth (يستخدمه AuthProvider)
+  Stream<dynamic> watchAuthUser();
 }

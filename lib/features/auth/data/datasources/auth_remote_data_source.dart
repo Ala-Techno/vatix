@@ -1,119 +1,39 @@
-  // import 'package:vatix/core/errors/exceptions.dart';
-  // import 'package:vatix/core/network/api_constants.dart';
-  // import 'package:dio/dio.dart';
-  import '../models/user_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../models/user_model.dart';
 
-  /// 1. Domain Contract for the remote auth operations
-  abstract class AuthRemoteDataSource {
-    Future<UserModel> login({
-      required String email,
-      required String password,
-    });
+/// عقد DataSource للمصادقة عبر Firebase
+abstract class AuthRemoteDataSource {
+  /// تسجيل الدخول بالبريد وكلمة المرور
+  Future<UserModel> signIn({
+    required String email,
+    required String password,
+  });
 
-    Future<UserModel> register({
-      required String firstName,
-      required String lastName,
-      required String email,
-      required String password,
-      required String phone,
-    });
-    Future<void> sendPasswordResetEmail(String email);
-  }
+  /// تسجيل الخروج
+  Future<void> signOut();
 
+  /// إرسال رابط إعادة تعيين كلمة المرور
+  Future<void> sendPasswordReset(String email);
 
-  // ═══════════════════════════════════════════════════════════════════
-  //   PRODUCTION SERVER — Real API Implementation
-  // ═══════════════════════════════════════════════════════════════════
+  /// Stream للمستخدم الحالي من FirebaseAuth
+  Stream<User?> watchAuthUser();
 
-  // class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
-  //   final Dio dio;
+  /// Stream لمستند users/{uid} من Firestore
+  Stream<DocumentSnapshot<Map<String, dynamic>>> watchUserDoc(String uid);
 
-  //   AuthRemoteDataSourceImpl({required this.dio});
+  /// جلب مستند كود الدعوة
+  Future<DocumentSnapshot<Map<String, dynamic>>> getInvite(String code);
 
-  //   @override
-  //   Future<UserModel> login({
-  //     required String email, // يستخدم كبريد إلكتروني
-  //     required String password,
-  //   }) async {
-  //     final response = await dio.post(
-  //       ApiConstants.login,
-  //       data: {'email': email, 'password': password},
-  //     );
-
-  //     if (response.data is Map<String, dynamic>) {
-  //       final dataMap = response.data as Map<String, dynamic>;
-        
-  //       if (dataMap['status'] == false || dataMap['success'] == false) {
-  //         throw ServerException(
-  //           message: dataMap['message']?.toString() ?? 'حدث خطأ أثناء تسجيل الدخول',
-  //         );
-  //       }
-
-  //       final userData = dataMap['data'] ?? dataMap['user'] ?? dataMap;
-  //       final userId = userData['id']?.toString() ?? '';
-        
-  //       return UserModel.fromJson(userData as Map<String, dynamic>, userId);
-  //     }
-      
-  //     throw const ServerException(message: 'استجابة غير متوقعة من السيرفر');
-  //   }
-
-  //   Future<UserModel> register({
-  //     required String firstName,
-  //     required String lastName,
-  //     required String email,
-  //     required String password,
-  //     required String phone,
-  //   }) async {
-  //     final response = await dio.post(
-  //       ApiConstants.register,
-  //       data: {
-  //         'first_name': firstName,
-  //         'last_name': lastName,
-  //         'email': email,
-  //         'password': password,
-  //         'phone': phone,
-  //       },
-  //     );
-
-  //     if (response.data is Map<String, dynamic>) {
-  //       final dataMap = response.data as Map<String, dynamic>;
-        
-  //       if (dataMap['status'] == false || dataMap['success'] == false) {
-  //         throw ServerException(
-  //           message: dataMap['message']?.toString() ?? 'فشل إنشاء الحساب',
-  //         );
-  //       }
-
-  //       final userData = dataMap['data'] ?? dataMap['user'] ?? dataMap;
-  //       final userId = userData['id']?.toString() ?? '';
-        
-  //       return UserModel.fromJson(userData as Map<String, dynamic>, userId);
-  //     }
-
-  //     throw const ServerException(message: 'استجابة غير متوقعة من السيرفر');
-  //   }
-    
-
-  //   @override
-  // Future<void> sendPasswordResetEmail(String email) async {
-  //   try {
-  //     final response = await dio.post(
-  //       ApiConstants.resetPassword,
-  //       data: {'email': email},
-  //     );
-
-  //     if (response.data is Map<String, dynamic>) {
-  //       final dataMap = response.data as Map<String, dynamic>;
-        
-  //       if (dataMap['status'] == false || dataMap['success'] == false) {
-  //         throw ServerException(
-  //           message: dataMap['message']?.toString() ?? 'فشل إعادة تعيين كلمة المرور',
-  //         );
-  //       }
-  //     }
-  //   } catch (e) {
-  //     throw ServerException(message: e.toString());
-  //   }
-  // }  
-  // }
+  /// تسجيل تاجر جديد:
+  /// إنشاء Auth ← التحقق من الكود ← كتابة users (أو حذف Auth عند الفشل)
+  Future<UserModel> registerRetailer({
+    required String email,
+    required String password,
+    required String businessName,
+    required String ownerName,
+    required String phone,
+    required String city,
+    required String inviteCode,
+  });
+}

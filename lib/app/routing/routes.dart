@@ -1,14 +1,13 @@
 abstract class Routes {
   const Routes._();
 
-  // ── Entry ────────────────────────────────────────────────────────────────
-  static const String splashScreen = '/';
+  /// نقطة البداية — AuthGate يتولى التوجيه من هنا
+  static const String gate = '/';
 
-  // ── Auth ─────────────────────────────────────────────────────────────────
-  static const String loginScreen = '/loginScreen';
-  static const String registerScreen = '/registerScreen';
-  static const String resetPasswordScreen = '/resetPasswordScreen';
+  /// إعادة تعيين كلمة المرور (تُفتح من LoginPage)
+  static const String resetPassword = '/resetPassword';
 
-  // ── M0 placeholder (يُستبدل في M1 بـ Gate + Retailer/Wholesaler Shells) ──
-  static const String mainNavigationScreen = '/mainNavigationScreen';
+  // M2+ يُضاف هنا:
+  // static const String productDetails = '/productDetails';
+  // static const String orderDetails = '/orderDetails';
 }

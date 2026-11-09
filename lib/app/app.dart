@@ -9,20 +9,17 @@ import 'routing/app_router.dart';
 
 class VatixApp extends StatelessWidget {
   final AppRouter appRouter;
-  final String initialRoute;
 
-  const VatixApp({
-    super.key,
-    required this.appRouter,
-    required this.initialRoute,
-  });
+  const VatixApp({super.key, required this.appRouter});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // M1: يصبح مصدر الحقيقة للمستخدم والدور والحالة.
-        ChangeNotifierProvider(create: (_) => getIt<AuthProvider>()),
+        // AuthProvider واحد في الجذر — مصدر الحقيقة للجلسة والدور
+        ChangeNotifierProvider<AuthProvider>(
+          create: (_) => getIt<AuthProvider>(),
+        ),
       ],
       child: MaterialApp(
         navigatorKey: AppRouter.navigatorKey,
@@ -32,7 +29,7 @@ class VatixApp extends StatelessWidget {
         supportedLocales: context.supportedLocales,
         locale: context.locale,
         theme: AppTheme.lightTheme,
-        initialRoute: initialRoute,
+        initialRoute: '/',
         onGenerateRoute: appRouter.generateRoute,
       ),
     );

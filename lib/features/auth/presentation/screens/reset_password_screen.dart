@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:vatix/features/auth/presentation/providers/auth_provider.dart'; // تأكد من مطابقت المسار لديك
+import 'package:vatix/features/auth/presentation/providers/auth_provider.dart';
 
+/// شاشة إعادة تعيين كلمة المرور
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
 
@@ -19,43 +20,36 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     super.dispose();
   }
 
-  void _submitResetPassword() async {
-    if (_formKey.currentState!.validate()) {
-      final authProvider = context.read<AuthProvider>();
-      
-      // استدعاء دالة الإرسال من الـ Provider
-      await authProvider.sendPasswordResetEmail(_emailController.text.trim());
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
 
-      if (!mounted) return;
+    final provider = context.read<AuthProvider>();
+    final success =
+        await provider.sendPasswordResetEmail(_emailController.text.trim());
 
-      // التحقق مما إذا تمت العملية بنجاح أم ظهر خطأ
-      if (authProvider.errorMessage == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني بنجاح'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context); // العودة للشاشة السابقة (مثلاً شاشة تسجيل الدخول)
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(authProvider.errorMessage!),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني'),
+        backgroundColor: Colors.green,
+      ));
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(provider.errorMessage ?? 'حدث خطأ، حاول مجدداً'),
+        backgroundColor: Colors.redAccent,
+      ));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('إعادة تعيين كلمة المرور'),
-      ),
+      appBar: AppBar(title: const Text('إعادة تعيين كلمة المرور')),
       body: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
@@ -63,49 +57,50 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             children: [
               const SizedBox(height: 20),
               const Text(
-                'الرجاء إدخال البريد الإلكتروني المرتبط بحسابك، وسنرسل لك رابطاً لإعادة تعيين كلمة المرور.',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+                'أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور.',
+                style: TextStyle(fontSize: 15, color: Colors.grey, height: 1.6),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 30),
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'البريد الإلكتروني',
-                  prefixIcon: Icon(Icons.email),
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.email_outlined),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'الرجاء إدخال البريد الإلكتروني';
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) {
+                    return 'يرجى إدخال البريد الإلكتروني';
                   }
-                  if (!value.contains('@') || !value.contains('.')) {
-                    return 'الرجاء إدخال بريد إلكتروني صالح';
+                  if (!v.contains('@') || !v.contains('.')) {
+                    return 'بريد إلكتروني غير صالح';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 30),
               Consumer<AuthProvider>(
-                builder: (context, authProvider, child) {
-                  return ElevatedButton(
-                    onPressed: authProvider.isLoading ? null : _submitResetPassword,
+                builder: (_, provider, __) => SizedBox(
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: provider.isLoading ? null : _submit,
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: authProvider.isLoading
+                    child: provider.isLoading
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text(
-                            'إرسال الرابط',
-                            style: TextStyle(fontSize: 18),
-                          ),
-                  );
-                },
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : const Text('إرسال الرابط',
+                            style: TextStyle(fontSize: 16)),
+                  ),
+                ),
               ),
             ],
           ),

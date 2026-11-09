@@ -1,0 +1,101 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    // ─────────────────────────────────────────────
+    // دوال مساعدة مشتركة
+    // ─────────────────────────────────────────────
+
+    // هل المستخدم مسجّل دخوله؟
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // جلب مستند المستخدم الحالي من users
+    function me() {
+      return get(/databases/$(db)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // هل المستخدم مورد (wholesaler)؟
+    function isWholesaler() {
+      return signedIn() && me().role == 'wholesaler';
+    }
+
+    // هل المستخدم تاجر نشط (active retailer)؟
+    function isActiveRetailer() {
+      return signedIn() && me().role == 'retailer' && me().status == 'active';
+    }
+
+    // ─────────────────────────────────────────────
+    // invites/{code} — أكواد الدعوة
+    // ─────────────────────────────────────────────
+    
+   match /invites/{code} {
+
+      // السماح بالقراءة الفردية والجماعية للتحقق من الكود أثناء التسجيل
+      allow get, list: if true;
+
+      // المورد ينشئ أو يعدّل كوداً يخصّه هو فقط
+      allow create, update: if isWholesaler()
+        && request.resource.data.wholesalerId == request.auth.uid;
+
+      allow delete: if false;
+    }
+
+    // ─────────────────────────────────────────────
+    // users/{uid} — مستندات المستخدمين
+    // ─────────────────────────────────────────────
+    match /users/{uid} {
+
+      // المستخدم يقرأ ملفه الشخصي
+      // أو المورد يقرأ مستندات تجّاره (wholesalerId == uid المورد)
+      // أو التاجر يقرأ مستند مورده
+      allow read: if signedIn()
+        && (
+          uid == request.auth.uid
+          || resource.data.wholesalerId == request.auth.uid
+          || uid == me().wholesalerId
+        );
+
+      // تسجيل تاجر جديد فقط — بشروط صارمة:
+      // 1) المستند يخص نفس المستخدم المسجل
+      // 2) الدور retailer فقط (لا يمكن التسجيل كمورد)
+      // 3) الحالة pending (لا يمكن التفعيل الذاتي)
+      // 4) كود الدعوة موجود في invites ونشط
+      // 5) الـ wholesalerId في الطلب يطابق ما في مستند كود الدعوة
+      allow create: if request.auth.uid == uid
+        && request.resource.data.role == 'retailer'
+        && request.resource.data.status == 'pending'
+        && exists(/databases/$(db)/documents/invites/$(request.resource.data.inviteCode))
+        && get(/databases/$(db)/documents/invites/$(request.resource.data.inviteCode)).data.isActive == true
+        && get(/databases/$(db)/documents/invites/$(request.resource.data.inviteCode)).data.wholesalerId
+             == request.resource.data.wholesalerId;
+
+      // المستخدم يعدّل بياناته الشخصية فقط (لا يمسّ الدور أو المورد أو الحالة)
+      allow update: if request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['businessName','ownerName','phone','city','address','avatarUrl','updatedAt']);
+
+      // المورد يقبل أو يوقف تاجراً تابعاً له فقط
+      // ويعدّل حقلَي status وupdatedAt فقط (لا غير)
+      allow update: if isWholesaler()
+        && resource.data.wholesalerId == request.auth.uid
+        && request.resource.data.status in ['active','blocked']
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status','updatedAt']);
+
+      // لا أحد يحذف مستند مستخدم
+      allow delete: if false;
+    }
+
+    // ─────────────────────────────────────────────
+    // قاعدة افتراضية — رفض كل ما لم يُذكر صراحةً
+    // (products / orders / ledger / accounts تُضاف في مراحل لاحقة)
+    // ─────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+  }
+}
+
