@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vatix/core/theme/app_colors.dart';
+import 'package:vatix/core/widgets/empty_state_widget.dart';
+import 'package:vatix/core/widgets/shimmer_loading.dart';
 import 'package:vatix/features/auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/customer_entity.dart';
 import '../providers/customers_provider.dart';
@@ -7,6 +10,7 @@ import '../widgets/customer_card.dart';
 import '../widgets/invite_code_card.dart';
 
 /// [CustomersScreen] — شاشة إدارة العملاء (التجار) وأكواد الدعوة للمورد
+/// مصممة بمساحات مريحة وبدون أي RenderFlex overflow
 class CustomersScreen extends StatefulWidget {
   const CustomersScreen({super.key});
 
@@ -23,7 +27,6 @@ class _CustomersScreenState extends State<CustomersScreen>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
 
-    // ربط المستمعين اللحظيين بهوية المورد الحالي
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = context.read<AuthProvider>().user;
       if (user != null) {
@@ -41,9 +44,9 @@ class _CustomersScreenState extends State<CustomersScreen>
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CustomersProvider>();
-    final primaryColor = Theme.of(context).primaryColor;
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
@@ -55,54 +58,24 @@ class _CustomersScreenState extends State<CustomersScreen>
               delegate: _TabBarHeaderDelegate(
                 TabBar(
                   controller: _tabController,
-                  labelColor: primaryColor,
-                  unselectedLabelColor: Colors.grey.shade600,
-                  indicatorColor: primaryColor,
-                  indicatorWeight: 3,
-                  labelStyle: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  unselectedLabelStyle: const TextStyle(fontSize: 13),
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  dividerColor: Colors.transparent,
                   tabs: [
-                    Tab(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text('طلبات الانضمام'),
-                          if (provider.pendingCount > 0) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.orange,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '${provider.pendingCount}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                    _buildTab(
+                      label: 'الطلبات',
+                      count: provider.pendingCount,
+                      countColor: AppColors.statusPending,
                     ),
-                    Tab(
-                      text: provider.activeCount > 0
-                          ? 'المفعّلون (${provider.activeCount})'
-                          : 'المفعّلون',
+                    _buildTab(
+                      label: 'المفعّلون',
+                      count: provider.activeCount,
+                      countColor: AppColors.statusActive,
                     ),
-                    Tab(
-                      text: provider.blockedCount > 0
-                          ? 'الموقوفون (${provider.blockedCount})'
-                          : 'الموقوفون',
+                    _buildTab(
+                      label: 'الموقوفون',
+                      count: provider.blockedCount,
+                      countColor: AppColors.statusBlocked,
                     ),
                   ],
                 ),
@@ -114,24 +87,31 @@ class _CustomersScreenState extends State<CustomersScreen>
           controller: _tabController,
           children: [
             _buildCustomerList(
+              isLoading: provider.isLoadingCustomers,
               customers: provider.pendingCustomers,
               emptyIcon: Icons.hourglass_empty_rounded,
               emptyTitle: 'لا توجد طلبات انضمام جديدة',
               emptySubtitle:
-                  'عندما يسجل تاجر جديد بكود الدعوة الخاص بك، سيظهر طلبه هنا للمراجعة والموافقة.',
+                  'عندما يسجل تاجر جديد باستخدام كود الدعوة الخاص بك، سيظهر طلبه هنا لتراجعه وتعتمده فوراً.',
+              iconColor: AppColors.statusPending,
             ),
             _buildCustomerList(
+              isLoading: provider.isLoadingCustomers,
               customers: provider.activeCustomers,
               emptyIcon: Icons.people_outline_rounded,
               emptyTitle: 'لا يوجد تجار مفعّلون حالياً',
               emptySubtitle:
-                  'شارك كود الدعوة مع تجارك واعتمد طلباتهم ليتمكنوا من طلب منتجاتك.',
+                  'شارك كود الدعوة أعلاه مع تجارك، وبمجرد قبول طلباتهم سيتمكنون من مشاهدة الكتالوج وإرسال الطلبات.',
+              iconColor: AppColors.statusActive,
             ),
             _buildCustomerList(
+              isLoading: provider.isLoadingCustomers,
               customers: provider.blockedCustomers,
               emptyIcon: Icons.block_flipped,
               emptyTitle: 'لا يوجد تجار موقوفون',
-              emptySubtitle: 'قائمة التجار الذين قمت بإيقاف حساباتهم ستظهر هنا.',
+              emptySubtitle:
+                  'التجار الذين تقرر إيقاف حساباتهم أو تعليق التعامل معهم سيظهرون في هذه القائمة.',
+              iconColor: AppColors.statusBlocked,
             ),
           ],
         ),
@@ -139,44 +119,80 @@ class _CustomersScreenState extends State<CustomersScreen>
     );
   }
 
+  Widget _buildTab({
+    required String label,
+    required int count,
+    required Color countColor,
+  }) {
+    return Tab(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontFamily: 'Cairo',
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            if (count > 0) ...[
+              const SizedBox(width: 5),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                decoration: BoxDecoration(
+                  color: countColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  count > 99 ? '99+' : '$count',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildCustomerList({
+    required bool isLoading,
     required List<CustomerEntity> customers,
     required IconData emptyIcon,
     required String emptyTitle,
     required String emptySubtitle,
+    Color? iconColor,
   }) {
+    if (isLoading) {
+      return ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        physics: const BouncingScrollPhysics(),
+        itemCount: 4,
+        itemBuilder: (_, __) => const ShimmerCustomerCard(),
+      );
+    }
+
     if (customers.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(emptyIcon, size: 56, color: Colors.grey.shade300),
-              const SizedBox(height: 14),
-              Text(
-                emptyTitle,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade700,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                emptySubtitle,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
+      return EmptyStateWidget(
+        icon: emptyIcon,
+        title: emptyTitle,
+        subtitle: emptySubtitle,
+        iconColor: iconColor,
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
+      physics: const BouncingScrollPhysics(),
       itemCount: customers.length,
       itemBuilder: (context, index) {
         return CustomerCard(customer: customers[index]);
@@ -191,10 +207,10 @@ class _TabBarHeaderDelegate extends SliverPersistentHeaderDelegate {
   _TabBarHeaderDelegate(this._tabBar);
 
   @override
-  double get minExtent => _tabBar.preferredSize.height;
+  double get minExtent => 52.0;
 
   @override
-  double get maxExtent => _tabBar.preferredSize.height;
+  double get maxExtent => 52.0;
 
   @override
   Widget build(
@@ -203,8 +219,23 @@ class _TabBarHeaderDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     return Container(
-      color: Colors.white,
-      child: _tabBar,
+      height: 52.0,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: const Border(
+          bottom: BorderSide(color: AppColors.borderSubtle, width: 1),
+        ),
+        boxShadow: overlapsContent
+            ? const [
+                BoxShadow(
+                  color: AppColors.shadowColor,
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
+              ]
+            : null,
+      ),
+      child: Center(child: _tabBar),
     );
   }
 
@@ -213,4 +244,3 @@ class _TabBarHeaderDelegate extends SliverPersistentHeaderDelegate {
     return false;
   }
 }
-

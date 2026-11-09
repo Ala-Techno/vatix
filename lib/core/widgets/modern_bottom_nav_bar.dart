@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
-/// شريط التنقل السفلي المشترك بين الـ Shells مع دعم الشارات (Badges)
+/// شريط التنقل السفلي الحديث (Modern Bottom Navigation Bar) مع دعم الشارات (Badges)
 class ModernBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
@@ -15,18 +16,18 @@ class ModernBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).primaryColor;
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      margin: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.borderSubtle),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: AppColors.shadowColor,
             blurRadius: 20,
-            offset: const Offset(0, 4),
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -37,7 +38,6 @@ class ModernBottomNavBar extends StatelessWidget {
           (i) => _NavItem(
             item: items[i],
             isSelected: currentIndex == i,
-            primaryColor: primaryColor,
             onTap: () => onTap(i),
           ),
         ),
@@ -61,13 +61,11 @@ class BottomNavItem {
 class _NavItem extends StatelessWidget {
   final BottomNavItem item;
   final bool isSelected;
-  final Color primaryColor;
   final VoidCallback onTap;
 
   const _NavItem({
     required this.item,
     required this.isSelected,
-    required this.primaryColor,
     required this.onTap,
   });
 
@@ -77,15 +75,15 @@ class _NavItem extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 250),
         curve: Curves.easeInOut,
         padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 16 : 12,
+          horizontal: isSelected ? 14 : 10,
           vertical: 8,
         ),
         decoration: BoxDecoration(
           color: isSelected
-              ? primaryColor.withValues(alpha: 0.1)
+              ? AppColors.primary.withValues(alpha: 0.1)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
@@ -97,21 +95,24 @@ class _NavItem extends StatelessWidget {
               children: [
                 Icon(
                   item.icon,
-                  color: isSelected ? primaryColor : Colors.grey[400],
-                  size: 24,
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.textSecondary,
+                  size: 22,
                 ),
                 if (item.badgeCount > 0)
                   Positioned(
-                    top: -4,
-                    right: -6,
+                    top: -6,
+                    right: -8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
+                        horizontal: 5,
                         vertical: 1,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.orange.shade800,
+                        color: AppColors.statusPending,
                         borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white, width: 1.5),
                       ),
                       constraints: const BoxConstraints(
                         minWidth: 16,
@@ -122,7 +123,8 @@ class _NavItem extends StatelessWidget {
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 9,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Cairo',
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -134,10 +136,11 @@ class _NavItem extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 item.label,
-                style: TextStyle(
-                  color: primaryColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                  fontFamily: 'Cairo',
                 ),
               ),
             ],

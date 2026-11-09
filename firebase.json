@@ -1,1 +1,29 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"vatix-7c491","appId":"1:807262228024:android:afca052fcc6156042760cd","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"vatix-7c491","configurations":{"android":"1:807262228024:android:afca052fcc6156042760cd","ios":"1:807262228024:ios:f227a8497dd902ec2760cd","macos":"1:807262228024:ios:3dc2b4a394db915e2760cd","web":"1:807262228024:web:8ad848ef6c7ba1632760cd","windows":"1:807262228024:web:e56c0e50b545af7e2760cd"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "vatix-7c491",
+          "appId": "1:807262228024:android:afca052fcc6156042760cd",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "vatix-7c491",
+          "configurations": {
+            "android": "1:807262228024:android:afca052fcc6156042760cd",
+            "ios": "1:807262228024:ios:f227a8497dd902ec2760cd",
+            "macos": "1:807262228024:ios:3dc2b4a394db915e2760cd",
+            "web": "1:807262228024:web:8ad848ef6c7ba1632760cd",
+            "windows": "1:807262228024:web:e56c0e50b545af7e2760cd"
+          }
+        }
+      }
+    }
+  }
+}

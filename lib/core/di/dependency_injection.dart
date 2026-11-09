@@ -22,6 +22,13 @@ import '../../features/customers/data/repositories/customers_repository_impl.dar
 import '../../features/customers/domain/repositories/customers_repository.dart';
 import '../../features/customers/presentation/providers/customers_provider.dart';
 
+// --- Products Feature ---
+import '../../features/products/data/datasources/products_remote_data_source.dart';
+import '../../features/products/data/repositories/products_repository_impl.dart';
+import '../../features/products/domain/repositories/products_repository.dart';
+import '../../features/products/presentation/providers/retailer_catalog_provider.dart';
+import '../../features/products/presentation/providers/wholesaler_products_provider.dart';
+
 final getIt = GetIt.instance;
 
 /// تسجيلات الحقن لـ Vatix (Feature-First)
@@ -92,6 +99,28 @@ Future<void> setupGetIt() async {
   getIt.registerFactory<CustomersProvider>(
     () => CustomersProvider(
       repository: getIt<CustomersRepository>(),
+    ),
+  );
+
+  // ── 8. Products Feature ──────────────────────────────────────────────────
+  getIt.registerLazySingleton<ProductsRemoteDataSource>(
+    () => ProductsRemoteDataSourceImpl(
+      firestore: getIt<FirebaseFirestore>(),
+    ),
+  );
+  getIt.registerLazySingleton<ProductsRepository>(
+    () => ProductsRepositoryImpl(
+      remoteDataSource: getIt<ProductsRemoteDataSource>(),
+    ),
+  );
+  getIt.registerFactory<WholesalerProductsProvider>(
+    () => WholesalerProductsProvider(
+      repository: getIt<ProductsRepository>(),
+    ),
+  );
+  getIt.registerFactory<RetailerCatalogProvider>(
+    () => RetailerCatalogProvider(
+      repository: getIt<ProductsRepository>(),
     ),
   );
 }

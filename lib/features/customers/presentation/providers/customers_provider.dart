@@ -20,6 +20,8 @@ class CustomersProvider extends ChangeNotifier {
   List<CustomerEntity> _blockedCustomers = [];
   InviteCodeEntity? _activeInvite;
 
+  bool _isLoadingCustomers = true;
+  bool _isLoadingInvite = true;
   bool _isLoadingRotation = false;
   bool _isActionLoading = false;
   String? _errorMessage;
@@ -40,6 +42,8 @@ class CustomersProvider extends ChangeNotifier {
   int get activeCount => _activeCustomers.length;
   int get blockedCount => _blockedCustomers.length;
 
+  bool get isLoadingCustomers => _isLoadingCustomers;
+  bool get isLoadingInvite => _isLoadingInvite;
   bool get isLoadingRotation => _isLoadingRotation;
   bool get isActionLoading => _isActionLoading;
   String? get errorMessage => _errorMessage;
@@ -49,6 +53,8 @@ class CustomersProvider extends ChangeNotifier {
     if (_wholesalerId == wholesalerId) return;
     _wholesalerId = wholesalerId;
 
+    _isLoadingCustomers = true;
+    _isLoadingInvite = true;
     _cancelSubscriptions();
 
     // 1. الاستماع لطلبات الانضمام (pending)
@@ -57,9 +63,12 @@ class CustomersProvider extends ChangeNotifier {
         .listen(
       (list) {
         _pendingCustomers = list;
+        _isLoadingCustomers = false;
         notifyListeners();
       },
       onError: (e) {
+        _isLoadingCustomers = false;
+        notifyListeners();
         if (kDebugMode) debugPrint('CustomersProvider pendingSub error: $e');
       },
     );
@@ -70,9 +79,12 @@ class CustomersProvider extends ChangeNotifier {
         .listen(
       (list) {
         _activeCustomers = list;
+        _isLoadingCustomers = false;
         notifyListeners();
       },
       onError: (e) {
+        _isLoadingCustomers = false;
+        notifyListeners();
         if (kDebugMode) debugPrint('CustomersProvider activeSub error: $e');
       },
     );
@@ -83,9 +95,12 @@ class CustomersProvider extends ChangeNotifier {
         .listen(
       (list) {
         _blockedCustomers = list;
+        _isLoadingCustomers = false;
         notifyListeners();
       },
       onError: (e) {
+        _isLoadingCustomers = false;
+        notifyListeners();
         if (kDebugMode) debugPrint('CustomersProvider blockedSub error: $e');
       },
     );
@@ -96,9 +111,12 @@ class CustomersProvider extends ChangeNotifier {
         .listen(
       (invite) {
         _activeInvite = invite;
+        _isLoadingInvite = false;
         notifyListeners();
       },
       onError: (e) {
+        _isLoadingInvite = false;
+        notifyListeners();
         if (kDebugMode) debugPrint('CustomersProvider inviteSub error: $e');
       },
     );
@@ -177,4 +195,3 @@ class CustomersProvider extends ChangeNotifier {
     super.dispose();
   }
 }
-

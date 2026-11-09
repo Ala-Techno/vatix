@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:vatix/core/theme/app_colors.dart';
 import 'package:vatix/features/auth/presentation/providers/auth_provider.dart';
 
-/// [RegisterRetailerScreen] — شاشة تسجيل التاجر بكود الدعوة
+/// [RegisterRetailerScreen] — شاشة تسجيل التاجر بكود الدعوة — Material 3 B2B
 class RegisterRetailerScreen extends StatefulWidget {
   const RegisterRetailerScreen({super.key});
 
@@ -55,192 +56,376 @@ class _RegisterRetailerScreenState extends State<RegisterRetailerScreen> {
     if (!mounted) return;
 
     if (success) {
-      // إغلاق شاشة التسجيل للعودة للـ AuthGate التي ستعرض شاشة PendingApprovalScreen تلقائياً
       Navigator.of(context).popUntil((route) => route.isFirst);
     } else {
       final error = context.read<AuthProvider>().errorMessage;
       if (error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Row(children: [
-            const Icon(Icons.error_outline, color: Colors.white),
-            const SizedBox(width: 10),
-            Expanded(child: Text(error)),
-          ]),
-          backgroundColor: Colors.redAccent.shade700,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          margin: const EdgeInsets.all(16),
-          duration: const Duration(seconds: 4),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline_rounded,
+                    color: Colors.white, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    error,
+                    style: const TextStyle(fontFamily: 'Cairo', fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.statusBlocked,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 4),
+          ),
+        );
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('إنشاء حساب تاجر'),
+        title: const Text('تسجيل منشأة جديدة'),
         centerTitle: true,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('أنشئ حساب منشأتك',
-                    style: theme.textTheme.headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 6),
-                Text('تحتاج كود دعوة من المورد للتسجيل',
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(color: Colors.grey.shade600)),
+                // ── بطاقة كود الدعوة أولاً لأهميته القصوى ──
+                _buildInviteCodeSection(),
+                const SizedBox(height: 20),
+
+                // ── بطاقة بيانات المنشأة ────────────────
+                _buildCardSection(
+                  title: 'بيانات المنشأة والمالك',
+                  icon: Icons.storefront_rounded,
+                  children: [
+                    _field(
+                      _businessNameController,
+                      label: 'اسم المنشأة / المحل التجاري',
+                      hint: 'مثال: سوبرماركت البركة',
+                      icon: Icons.store_outlined,
+                      action: TextInputAction.next,
+                    ),
+                    const SizedBox(height: 14),
+                    _field(
+                      _ownerNameController,
+                      label: 'اسم المسؤول / التاجر',
+                      hint: 'مثال: أحمد محمد',
+                      icon: Icons.person_outline_rounded,
+                      action: TextInputAction.next,
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: _field(
+                            _phoneController,
+                            label: 'رقم الهاتف',
+                            hint: '7xxxxxxxx',
+                            icon: Icons.phone_outlined,
+                            type: TextInputType.phone,
+                            action: TextInputAction.next,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          flex: 2,
+                          child: _field(
+                            _cityController,
+                            label: 'المدينة',
+                            hint: 'صنعاء، عدن...',
+                            icon: Icons.location_city_outlined,
+                            action: TextInputAction.next,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // ── بطاقة بيانات الحساب ──────────────────
+                _buildCardSection(
+                  title: 'بيانات تسجيل الدخول',
+                  icon: Icons.lock_person_rounded,
+                  children: [
+                    _field(
+                      _emailController,
+                      label: 'البريد الإلكتروني',
+                      hint: 'example@domain.com',
+                      icon: Icons.email_outlined,
+                      type: TextInputType.emailAddress,
+                      action: TextInputAction.next,
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) {
+                          return 'يرجى إدخال البريد الإلكتروني';
+                        }
+                        if (!v.contains('@') || !v.contains('.')) {
+                          return 'بريد إلكتروني غير صالح';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: _obscurePassword,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: 'كلمة المرور',
+                        prefixIcon: const Icon(Icons.lock_outline_rounded),
+                        suffixIcon: SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              size: 20,
+                            ),
+                            onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
+                          ),
+                        ),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) {
+                          return 'يرجى إدخال كلمة المرور';
+                        }
+                        if (v.length < 6) {
+                          return 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _confirmPasswordController,
+                      obscureText: _obscureConfirm,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) => _handleRegister(),
+                      decoration: InputDecoration(
+                        labelText: 'تأكيد كلمة المرور',
+                        prefixIcon: const Icon(Icons.lock_outline_rounded),
+                        suffixIcon: SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: IconButton(
+                            icon: Icon(
+                              _obscureConfirm
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              size: 20,
+                            ),
+                            onPressed: () => setState(
+                              () => _obscureConfirm = !_obscureConfirm,
+                            ),
+                          ),
+                        ),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) {
+                          return 'يرجى تأكيد كلمة المرور';
+                        }
+                        if (v != _passwordController.text) {
+                          return 'كلمتا المرور غير متطابقتين';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 28),
 
-                _field(_businessNameController,
-                    label: 'اسم المنشأة / الشركة',
-                    icon: Icons.store_outlined,
-                    action: TextInputAction.next),
-                const SizedBox(height: 16),
-                _field(_ownerNameController,
-                    label: 'اسم المالك / المسؤول',
-                    icon: Icons.person_outline,
-                    action: TextInputAction.next),
-                const SizedBox(height: 16),
-                _field(_emailController,
-                    label: 'البريد الإلكتروني',
-                    hint: 'example@domain.com',
-                    icon: Icons.email_outlined,
-                    type: TextInputType.emailAddress,
-                    action: TextInputAction.next,
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) {
-                        return 'يرجى إدخال البريد الإلكتروني';
-                      }
-                      if (!v.contains('@') || !v.contains('.')) {
-                        return 'بريد إلكتروني غير صالح';
-                      }
-                      return null;
-                    }),
-                const SizedBox(height: 16),
-                _field(_phoneController,
-                    label: 'رقم الهاتف',
-                    hint: '777xxxxxx',
-                    icon: Icons.phone_outlined,
-                    type: TextInputType.phone,
-                    action: TextInputAction.next),
-                const SizedBox(height: 16),
-                _field(_cityController,
-                    label: 'المدينة',
-                    icon: Icons.location_city_outlined,
-                    action: TextInputAction.next),
-                const SizedBox(height: 16),
-
-                // كلمة المرور
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  textInputAction: TextInputAction.next,
-                  decoration: _deco(
-                    label: 'كلمة المرور',
-                    icon: Icons.lock_outline,
-                    suffix: _eyeBtn(
-                        _obscurePassword,
-                        () => setState(
-                            () => _obscurePassword = !_obscurePassword)),
-                  ),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'يرجى إدخال كلمة المرور';
-                    if (v.length < 6) {
-                      return 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // تأكيد كلمة المرور
-                TextFormField(
-                  controller: _confirmPasswordController,
-                  obscureText: _obscureConfirm,
-                  textInputAction: TextInputAction.next,
-                  decoration: _deco(
-                    label: 'تأكيد كلمة المرور',
-                    icon: Icons.lock_outline,
-                    suffix: _eyeBtn(
-                        _obscureConfirm,
-                        () => setState(
-                            () => _obscureConfirm = !_obscureConfirm)),
-                  ),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) {
-                      return 'يرجى تأكيد كلمة المرور';
-                    }
-                    if (v != _passwordController.text) {
-                      return 'كلمتا المرور غير متطابقتين';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // كود الدعوة (يُحوَّل لأحرف كبيرة تلقائياً)
-                TextFormField(
-                  controller: _inviteCodeController,
-                  textInputAction: TextInputAction.done,
-                  textCapitalization: TextCapitalization.characters,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9a-z]')),
-                    _UpperCaseTextFormatter()
-                  ],
-                  decoration: _deco(
-                    label: 'كود الدعوة',
-                    hint: 'VATX2K3M',
-                    icon: Icons.vpn_key_outlined,
-                  ),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) {
-                      return 'يرجى إدخال كود الدعوة';
-                    }
-                    if (v.trim().length < 4) {
-                      return 'كود الدعوة قصير جداً';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 32),
-
-                // زر التسجيل
+                // زر إنشاء الحساب
                 Consumer<AuthProvider>(
                   builder: (_, provider, __) => SizedBox(
-                    height: 54,
+                    height: 52,
                     child: ElevatedButton(
                       onPressed: provider.isLoading ? null : _handleRegister,
-                      style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
                       child: provider.isLoading
                           ? const SizedBox(
-                              width: 24,
-                              height: 24,
+                              width: 22,
+                              height: 22,
                               child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2.5))
-                          : const Text('إنشاء الحساب',
-                              style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold)),
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              ),
+                            )
+                          : const Text('إرسال طلب الانضمام'),
                     ),
                   ),
                 ),
+                const SizedBox(height: 16),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildInviteCodeSection() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.statusPending.withValues(alpha: 0.4),
+          width: 1.5,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColor,
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.statusPendingBg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.vpn_key_rounded,
+                  color: AppColors.statusPending,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'كود دعوة المورد',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'مطلوب للربط مع المورد المعتمد',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          TextFormField(
+            controller: _inviteCodeController,
+            textInputAction: TextInputAction.next,
+            textCapitalization: TextCapitalization.characters,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 4,
+              fontFamily: 'monospace',
+              color: AppColors.primary,
+            ),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9a-z]')),
+              _UpperCaseTextFormatter(),
+            ],
+            decoration: InputDecoration(
+              hintText: 'VATX2K3M',
+              hintStyle: TextStyle(
+                fontSize: 18,
+                letterSpacing: 4,
+                color: AppColors.textHint.withValues(alpha: 0.6),
+                fontFamily: 'monospace',
+              ),
+              fillColor: AppColors.surfaceVariant,
+              prefixIcon: const Icon(
+                Icons.tag_rounded,
+                color: AppColors.statusPending,
+              ),
+            ),
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) {
+                return 'يرجى إدخال كود الدعوة';
+              }
+              if (v.trim().length < 4) {
+                return 'كود الدعوة قصير جداً';
+              }
+              return null;
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCardSection({
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderSubtle),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColor,
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 20, color: AppColors.primaryLight),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...children,
+        ],
       ),
     );
   }
@@ -258,36 +443,13 @@ class _RegisterRetailerScreenState extends State<RegisterRetailerScreen> {
       controller: controller,
       keyboardType: type,
       textInputAction: action,
-      decoration: _deco(label: label, hint: hint, icon: icon),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        prefixIcon: Icon(icon),
+      ),
       validator: validator ??
           (v) => (v == null || v.trim().isEmpty) ? 'حقل مطلوب' : null,
-    );
-  }
-
-  InputDecoration _deco({
-    required String label,
-    String? hint,
-    required IconData icon,
-    Widget? suffix,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      prefixIcon: Icon(icon),
-      suffixIcon: suffix,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
-      ),
-    );
-  }
-
-  IconButton _eyeBtn(bool obscure, VoidCallback onPressed) {
-    return IconButton(
-      icon: Icon(
-          obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-      onPressed: onPressed,
     );
   }
 }
