@@ -85,4 +85,38 @@ class UserEntity {
   /// هل المستخدم تاجر نشط؟
   bool get isActiveRetailer =>
       role == UserRole.retailer && status == RetailerStatus.active;
+
+  UserEntity copyWith({
+    String? id,
+    UserRole? role,
+    String? businessName,
+    String? ownerName,
+    String? phone,
+    String? city,
+    String? email,
+    String? address,
+    String? avatarUrl,
+    String? wholesalerId,
+    RetailerStatus? status,
+    String? inviteCode,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return UserEntity(
+      id: id ?? this.id,
+      role: role ?? this.role,
+      businessName: businessName ?? this.businessName,
+      ownerName: ownerName ?? this.ownerName,
+      phone: phone ?? this.phone,
+      city: city ?? this.city,
+      email: email ?? this.email,
+      address: address ?? this.address,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      wholesalerId: wholesalerId ?? this.wholesalerId,
+      status: status ?? this.status,
+      inviteCode: inviteCode ?? this.inviteCode,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }

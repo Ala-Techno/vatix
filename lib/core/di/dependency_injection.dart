@@ -29,6 +29,28 @@ import '../../features/products/domain/repositories/products_repository.dart';
 import '../../features/products/presentation/providers/retailer_catalog_provider.dart';
 import '../../features/products/presentation/providers/wholesaler_products_provider.dart';
 
+// --- Cart Feature ---
+import '../../features/cart/presentation/providers/cart_provider.dart';
+
+// --- Orders Feature ---
+import '../../features/orders/data/datasources/orders_remote_data_source.dart';
+import '../../features/orders/data/repositories/orders_repository_impl.dart';
+import '../../features/orders/domain/repositories/orders_repository.dart';
+import '../../features/orders/domain/usecases/approve_order_usecase.dart';
+import '../../features/orders/domain/usecases/place_order_use_case.dart';
+import '../../features/orders/domain/usecases/reject_and_deliver_order_usecases.dart';
+import '../../features/orders/presentation/providers/retailer_orders_provider.dart';
+import '../../features/orders/presentation/providers/wholesaler_orders_provider.dart';
+
+// --- Ledger Feature ---
+import '../../features/ledger/data/datasources/ledger_remote_data_source.dart';
+import '../../features/ledger/data/repositories/ledger_repository_impl.dart';
+import '../../features/ledger/domain/repositories/ledger_repository.dart';
+import '../../features/ledger/domain/usecases/record_payment_use_case.dart';
+import '../../features/ledger/presentation/providers/retailer_account_provider.dart';
+import '../../features/ledger/presentation/providers/retailer_statement_provider.dart';
+import '../../features/ledger/presentation/providers/wholesaler_ledger_provider.dart';
+
 final getIt = GetIt.instance;
 
 /// تسجيلات الحقن لـ Vatix (Feature-First)
@@ -121,6 +143,77 @@ Future<void> setupGetIt() async {
   getIt.registerFactory<RetailerCatalogProvider>(
     () => RetailerCatalogProvider(
       repository: getIt<ProductsRepository>(),
+    ),
+  );
+
+  // ── 9. Cart Feature ──────────────────────────────────────────────────────
+  getIt.registerLazySingleton<CartProvider>(
+    () => CartProvider(),
+  );
+
+  // ── 10. Orders Feature ───────────────────────────────────────────────────
+  getIt.registerLazySingleton<OrdersRemoteDataSource>(
+    () => OrdersRemoteDataSourceImpl(
+      firestore: getIt<FirebaseFirestore>(),
+    ),
+  );
+  getIt.registerLazySingleton<OrdersRepository>(
+    () => OrdersRepositoryImpl(
+      remoteDataSource: getIt<OrdersRemoteDataSource>(),
+    ),
+  );
+  getIt.registerLazySingleton<PlaceOrderUseCase>(
+    () => PlaceOrderUseCase(getIt<OrdersRepository>()),
+  );
+  getIt.registerLazySingleton<ApproveOrderUseCase>(
+    () => ApproveOrderUseCase(getIt<OrdersRepository>()),
+  );
+  getIt.registerLazySingleton<RejectOrderUseCase>(
+    () => RejectOrderUseCase(getIt<OrdersRepository>()),
+  );
+  getIt.registerLazySingleton<DeliverOrderUseCase>(
+    () => DeliverOrderUseCase(getIt<OrdersRepository>()),
+  );
+  getIt.registerFactory<RetailerOrdersProvider>(
+    () => RetailerOrdersProvider(
+      ordersRepository: getIt<OrdersRepository>(),
+      placeOrderUseCase: getIt<PlaceOrderUseCase>(),
+    ),
+  );
+  getIt.registerFactory<WholesalerOrdersProvider>(
+    () => WholesalerOrdersProvider(
+      repository: getIt<OrdersRepository>(),
+    ),
+  );
+
+  // ── 11. Ledger Feature ───────────────────────────────────────────────────
+  getIt.registerLazySingleton<LedgerRemoteDataSource>(
+    () => LedgerRemoteDataSourceImpl(
+      firestore: getIt<FirebaseFirestore>(),
+    ),
+  );
+  getIt.registerLazySingleton<LedgerRepository>(
+    () => LedgerRepositoryImpl(
+      remoteDataSource: getIt<LedgerRemoteDataSource>(),
+    ),
+  );
+  getIt.registerLazySingleton<RecordPaymentUseCase>(
+    () => RecordPaymentUseCase(getIt<LedgerRepository>()),
+  );
+  getIt.registerFactory<WholesalerLedgerProvider>(
+    () => WholesalerLedgerProvider(
+      repository: getIt<LedgerRepository>(),
+    ),
+  );
+  getIt.registerFactory<RetailerStatementProvider>(
+    () => RetailerStatementProvider(
+      repository: getIt<LedgerRepository>(),
+      recordPaymentUseCase: getIt<RecordPaymentUseCase>(),
+    ),
+  );
+  getIt.registerFactory<RetailerAccountProvider>(
+    () => RetailerAccountProvider(
+      repository: getIt<LedgerRepository>(),
     ),
   );
 }

@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:vatix/app/routing/routes.dart';
 import 'package:vatix/features/auth/presentation/gate/auth_gate.dart';
 import 'package:vatix/features/auth/presentation/screens/reset_password_screen.dart';
+import 'package:vatix/features/orders/domain/entities/order_entity.dart';
+import 'package:vatix/features/orders/presentation/screens/checkout_screen.dart';
+import 'package:vatix/features/orders/presentation/screens/order_details_screen.dart';
+import 'package:vatix/features/orders/presentation/screens/order_success_screen.dart';
 
 class AppRouter {
   static final GlobalKey<NavigatorState> navigatorKey =
@@ -8,13 +13,33 @@ class AppRouter {
 
   Route<dynamic>? generateRoute(RouteSettings settings) {
     switch (settings.name) {
-      case '/':
+      case Routes.gate:
         // نقطة البداية الوحيدة — AuthGate يتولى كل التوجيه
         return MaterialPageRoute(builder: (_) => const AuthGate());
 
-      case '/resetPassword':
+      case Routes.resetPassword:
         return MaterialPageRoute(
             builder: (_) => const ResetPasswordScreen());
+
+      case Routes.checkout:
+        final wholesalerName = settings.arguments as String?;
+        return MaterialPageRoute(
+          builder: (_) => CheckoutScreen(
+            initialWholesalerName: wholesalerName,
+          ),
+        );
+
+      case Routes.orderSuccess:
+        final order = settings.arguments as OrderEntity;
+        return MaterialPageRoute(
+          builder: (_) => OrderSuccessScreen(order: order),
+        );
+
+      case Routes.orderDetails:
+        final order = settings.arguments as OrderEntity;
+        return MaterialPageRoute(
+          builder: (_) => OrderDetailsScreen(initialOrder: order),
+        );
 
       default:
         return MaterialPageRoute(

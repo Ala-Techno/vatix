@@ -7,7 +7,12 @@ abstract class Routes {
   /// إعادة تعيين كلمة المرور (تُفتح من LoginPage)
   static const String resetPassword = '/resetPassword';
 
-  // M2+ يُضاف هنا:
-  // static const String productDetails = '/productDetails';
-  // static const String orderDetails = '/orderDetails';
+  /// تأكيد أمر الشراء
+  static const String checkout = '/checkout';
+
+  /// نجاح إرسال أمر الشراء
+  static const String orderSuccess = '/orderSuccess';
+
+  /// تفاصيل أمر الشراء
+  static const String orderDetails = '/orderDetails';
 }

@@ -1,30 +1,125 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:vatix/core/theme/app_colors.dart';
+import 'package:vatix/features/cart/presentation/providers/cart_provider.dart';
 import '../../domain/entities/product_entity.dart';
 
 /// [ProductDetailsBottomSheet] — نافذة تفاصيل الصنف للتاجر
 /// تعرض: الاسم، السعر بالعملة المعتمدة، وحدة البيع، كود الصنف، الوصف، والتوفر
-/// ملاحظة: زر «إضافة للسلة» مخفي حتى المرحلة M3 حسب الخطة الرسمية
-class ProductDetailsBottomSheet extends StatelessWidget {
+/// وتتيح اختيار الكمية والإضافة لسلة المشتريات (Task 3.1.5)
+class ProductDetailsBottomSheet extends StatefulWidget {
   final ProductEntity product;
 
   const ProductDetailsBottomSheet({super.key, required this.product});
 
   static void show(BuildContext context, ProductEntity product) {
+    CartProvider? cartProvider;
+    try {
+      cartProvider = context.read<CartProvider>();
+    } catch (_) {
+      cartProvider = null;
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => ProductDetailsBottomSheet(product: product),
+      builder: (_) {
+        if (cartProvider != null) {
+          return ChangeNotifierProvider.value(
+            value: cartProvider,
+            child: ProductDetailsBottomSheet(product: product),
+          );
+        }
+        return ProductDetailsBottomSheet(product: product);
+      },
+    );
+  }
+
+  @override
+  State<ProductDetailsBottomSheet> createState() =>
+      _ProductDetailsBottomSheetState();
+}
+
+class _ProductDetailsBottomSheetState extends State<ProductDetailsBottomSheet> {
+  int _quantity = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final cart = context.read<CartProvider>();
+      final existingQty = cart.getQuantity(widget.product.id);
+      if (existingQty > 0) {
+        setState(() => _quantity = existingQty);
+      }
+    });
+  }
+
+  void _increment() {
+    if (_quantity < 999) {
+      setState(() => _quantity++);
+    }
+  }
+
+  void _decrement() {
+    if (_quantity > 1) {
+      setState(() => _quantity--);
+    }
+  }
+
+  void _addToCart() {
+    final cart = context.read<CartProvider>();
+    final error = cart.addItem(widget.product, quantity: _quantity);
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error,
+            style: const TextStyle(fontFamily: 'Cairo'),
+          ),
+          backgroundColor: AppColors.statusBlocked,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    Navigator.pop(context);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded,
+                color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'تمت إضافة $_quantity من «${widget.product.name}» إلى السلة',
+                style: const TextStyle(fontFamily: 'Cairo'),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.statusActive,
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final product = widget.product;
+    final cart = context.watch<CartProvider>();
+    final isAlreadyInCart = cart.isInCart(product.id);
+
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.82,
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
       decoration: const BoxDecoration(
         color: AppColors.surface,
@@ -54,49 +149,28 @@ class ProductDetailsBottomSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // صورة المنتج أو الأيقونة الافتراضية
+                  // صورة المنتج (إن توفرت)
                   if (product.imageUrl != null &&
-                      product.imageUrl!.trim().isNotEmpty) ...[
+                      product.imageUrl!.isNotEmpty) ...[
                     ClipRRect(
                       borderRadius: BorderRadius.circular(16),
                       child: Container(
-                        height: 180,
+                        height: 200,
                         width: double.infinity,
                         color: AppColors.surfaceVariant,
                         child: CachedNetworkImage(
                           imageUrl: product.imageUrl!,
-                          fit: BoxFit.contain,
+                          fit: BoxFit.cover,
                           placeholder: (_, __) => const Center(
-                            child: SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                           errorWidget: (_, __, ___) => const Center(
                             child: Icon(
-                              Icons.inventory_2_rounded,
+                              Icons.broken_image_rounded,
                               size: 48,
-                              color: AppColors.primaryLight,
+                              color: AppColors.textHint,
                             ),
                           ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ] else ...[
-                    Center(
-                      child: Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: const Icon(
-                          Icons.inventory_2_rounded,
-                          size: 38,
-                          color: AppColors.primaryLight,
                         ),
                       ),
                     ),
@@ -173,7 +247,6 @@ class ProductDetailsBottomSheet extends StatelessWidget {
                           ),
                         ],
                       ),
-                      // شارة التوفر
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
@@ -183,11 +256,12 @@ class ProductDetailsBottomSheet extends StatelessWidget {
                           color: product.isAvailable
                               ? AppColors.statusActiveBg
                               : AppColors.statusBlockedBg,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                             color: product.isAvailable
                                 ? AppColors.statusActive.withValues(alpha: 0.3)
-                                : AppColors.statusBlocked.withValues(alpha: 0.3),
+                                : AppColors.statusBlocked
+                                    .withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(
@@ -250,44 +324,144 @@ class ProductDetailsBottomSheet extends StatelessWidget {
                   ],
 
                   const SizedBox(height: 24),
+                  const Divider(height: 1),
+                  const SizedBox(height: 20),
 
-                  // تنبيه المرحلة M3 بخصوص زر الإضافة للسلة (حسب متطلبات الخطة §2.6.4)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.borderSubtle),
-                    ),
-                    child: const Row(
+                  // ── محدد الكمية وزر الإضافة للسلة (Task 3.1.5) ─────────────
+                  if (product.isAvailable) ...[
+                    Row(
                       children: [
-                        Icon(
-                          Icons.info_outline_rounded,
-                          size: 18,
-                          color: AppColors.primaryLight,
+                        const Text(
+                          'الكمية المطلوبة:',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                            fontFamily: 'Cairo',
+                          ),
                         ),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'إضافة الأصناف إلى السلة وإرسال أوامر الشراء ستُتاح في المرحلة القادمة (M3).',
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              color: AppColors.textSecondary,
-                              fontFamily: 'Cairo',
-                              height: 1.4,
-                            ),
+                        const Spacer(),
+
+                        // أزرار التحكم بالكمية
+                        Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceVariant,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.borderSubtle),
+                          ),
+                          child: Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove_rounded, size: 20),
+                                onPressed: _quantity > 1 ? _decrement : null,
+                                constraints: const BoxConstraints(
+                                  minWidth: 44,
+                                  minHeight: 44,
+                                ),
+                              ),
+                              Container(
+                                constraints:
+                                    const BoxConstraints(minWidth: 36),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  '$_quantity',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.textPrimary,
+                                    fontFamily: 'Cairo',
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add_rounded, size: 20),
+                                onPressed: _quantity < 999 ? _increment : null,
+                                constraints: const BoxConstraints(
+                                  minWidth: 44,
+                                  minHeight: 44,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 20),
+
+                    // زر الإضافة للسلة
+                    SizedBox(
+                      height: 50,
+                      child: ElevatedButton.icon(
+                        onPressed: _addToCart,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        icon: const Icon(Icons.add_shopping_cart_rounded,
+                            size: 20),
+                        label: Text(
+                          isAlreadyInCart
+                              ? 'تحديث الكمية في السلة'
+                              : 'إضافة إلى السلة',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'Cairo',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    // تنبيه عدم التوفر
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.statusBlockedBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color:
+                              AppColors.statusBlocked.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline_rounded,
+                            size: 20,
+                            color: AppColors.statusBlocked,
+                          ),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'هذا الصنف غير متوفر حالياً للطلب من قبل المورد.',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.statusBlocked,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Cairo',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 12),
 
                   // زر الإغلاق
                   SizedBox(
-                    height: 48,
+                    height: 46,
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                       child: const Text('إغلاق'),
                     ),
                   ),
@@ -331,4 +505,3 @@ class ProductDetailsBottomSheet extends StatelessWidget {
     );
   }
 }
-

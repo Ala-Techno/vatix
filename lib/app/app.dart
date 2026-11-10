@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../core/di/dependency_injection.dart';
 import '../core/theme/app_theme.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
+import '../features/cart/presentation/providers/cart_provider.dart';
+import '../features/orders/presentation/providers/retailer_orders_provider.dart';
 import 'routing/app_router.dart';
 
 class VatixApp extends StatelessWidget {
@@ -19,6 +21,14 @@ class VatixApp extends StatelessWidget {
         // AuthProvider واحد في الجذر — مصدر الحقيقة للجلسة والدور
         ChangeNotifierProvider<AuthProvider>(
           create: (_) => getIt<AuthProvider>(),
+        ),
+        // CartProvider في الجذر — سلة المشتريات متاحة عبر كامل مسارات التطبيق
+        ChangeNotifierProvider<CartProvider>(
+          create: (_) => getIt<CartProvider>(),
+        ),
+        // RetailerOrdersProvider في الجذر — قائمة طلبات التاجر والتحديثات اللحظية
+        ChangeNotifierProvider<RetailerOrdersProvider>(
+          create: (_) => getIt<RetailerOrdersProvider>(),
         ),
       ],
       child: MaterialApp(

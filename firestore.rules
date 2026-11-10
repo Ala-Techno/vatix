@@ -116,8 +116,95 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────
+    // orders/{id} — الطلبات
+    // ─────────────────────────────────────────────
+    match /orders/{id} {
+      // قراءة الطلب مسموحة للتاجر صاحب الطلب أو المورد الموجه له الطلب
+      allow read: if signedIn() && (
+        resource.data.retailerId == request.auth.uid
+        || resource.data.wholesalerId == request.auth.uid
+      );
+
+      // التاجر النشط فقط ينشئ طلباً:
+      // 1) retailerId يطابق UID التاجر المسجل
+      // 2) wholesalerId يطابق مورد التاجر (me().wholesalerId)
+      // 3) الحالة الابتدائية pending حصراً
+      allow create: if isActiveRetailer()
+        && request.resource.data.retailerId == request.auth.uid
+        && request.resource.data.wholesalerId == me().wholesalerId
+        && request.resource.data.status == 'pending';
+
+      // تحديثات المورد:
+      // 1) pending -> approved (مع paymentType إما credit أو cash)
+      // 2) pending -> rejected (مع سبب الرفض)
+      // 3) approved -> delivered
+      // مع قيد affectedKeys الصارم
+      allow update: if isWholesaler()
+        && resource.data.wholesalerId == request.auth.uid
+        && ((resource.data.status == 'pending' && request.resource.data.status == 'approved'
+               && request.resource.data.paymentType in ['credit', 'cash'])
+         || (resource.data.status == 'pending' && request.resource.data.status == 'rejected')
+         || (resource.data.status == 'approved' && request.resource.data.status == 'delivered'))
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'paymentType', 'updatedAt', 'approvedAt', 'deliveredAt', 'rejectionReason']);
+
+      // التاجر يلغي طلبه فقط إذا كانت حالته pending ويعدل فقط status و updatedAt
+      allow update: if signedIn()
+        && resource.data.retailerId == request.auth.uid
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'cancelled'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']);
+
+      // لا يُحذف أي طلب
+      allow delete: if false;
+    }
+
+    // ─────────────────────────────────────────────
+    // ledger/{id} — دفتر القيود المالية (Task 5.6)
+    // ─────────────────────────────────────────────
+    match /ledger/{id} {
+      // قراءة القيود مسموحة للتاجر أو المورد المعنيين بالقيد حصراً
+      allow read: if signedIn() && (
+        resource.data.retailerId == request.auth.uid
+        || resource.data.wholesalerId == request.auth.uid
+      );
+
+      // المورد فقط ينشئ قيداً مالياً لتاجر تابع له حصراً مع تدقيق الحقول
+      allow create: if isWholesaler()
+        && request.resource.data.wholesalerId == request.auth.uid
+        && request.resource.data.retailerId is string
+        && request.resource.data.retailerId != ''
+        && request.resource.data.type in ['DEBT', 'PAYMENT']
+        && request.resource.data.amount is int
+        && request.resource.data.amount > 0
+        && currencyOk(request.resource.data.currency)
+        && request.resource.data.createdBy == request.auth.uid
+        && get(/databases/$(db)/documents/users/$(request.resource.data.retailerId)).data.wholesalerId == request.auth.uid;
+
+      // ممنوع نهائياً تعديل أو حذف أي قيد محاسبي (سجل تاريخي غير قابل للتغيير)
+      allow update, delete: if false;
+    }
+
+    // ─────────────────────────────────────────────
+    // accounts/{id} — حسابات وأرصدة التجار (Task 5.6)
+    // ─────────────────────────────────────────────
+    match /accounts/{id} {
+      // قراءة الحساب مسموحة للتاجر أو المورد المعنيين بالحساب حصراً
+      allow read: if signedIn() && (
+        resource.data.retailerId == request.auth.uid
+        || resource.data.wholesalerId == request.auth.uid
+      );
+
+      // المورد فقط يكتب أو يدمج تحديثات الأرصدة لتجاره التابعين له
+      allow write: if isWholesaler()
+        && request.resource.data.wholesalerId == request.auth.uid
+        && request.resource.data.retailerId is string
+        && get(/databases/$(db)/documents/users/$(request.resource.data.retailerId)).data.wholesalerId == request.auth.uid;
+    }
+
+    // ─────────────────────────────────────────────
     // قاعدة افتراضية — رفض كل ما لم يُذكر صراحةً
-    // (orders / ledger / accounts تُضاف في مراحل لاحقة)
+    // (ledger / accounts تُضاف في M4)
     // ─────────────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;
