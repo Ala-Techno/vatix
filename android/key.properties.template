@@ -1,0 +1,22 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# key.properties — Android Release Signing Configuration
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# INSTRUCTIONS:
+#   1. Copy this file to: android/key.properties   (one level up from this file,
+#      i.e., directly inside the `android/` folder)
+#   2. Fill in the values below with your actual keystore details
+#   3. NEVER commit key.properties to git — it is already listed in .gitignore
+#
+# GENERATE YOUR KEYSTORE with:
+#   keytool -genkey -v \
+#     -keystore ../vatix-release-key.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 \
+#     -alias vatix-key
+#
+# ─────────────────────────────────────────────────────────────────────────────
+
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=vatix-key
+storeFile=../../vatix-release-key.jks

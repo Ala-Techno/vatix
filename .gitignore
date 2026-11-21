@@ -55,3 +55,8 @@ ios/Runner/GoogleService-Info.plist
 # Accidental non-flutter files & archives
 node_modules/
 package-lock.json
+
+# Android release signing — NEVER commit these to version control
+key.properties
+*.jks
+*.keystore
