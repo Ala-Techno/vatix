@@ -8,11 +8,11 @@ import '../providers/wholesaler_orders_provider.dart';
 import '../widgets/wholesaler_order_tile.dart';
 import 'wholesaler_order_details_screen.dart';
 
-/// [WholesalerOrdersScreen] — شاشة قائمة الطلبات الواردة للمورد (Task 4.3)
-/// تشتمل على:
-/// 1. شرائح فلترة الحالة (معلق / معتمد / تم التوصيل / مرفوض)
-/// 2. عرض لحظي للطلبات المعلقة وبصفحات (Pagination) للحالات الأخرى
-/// 3. سحب للتحديث وتمرير لتحميل المزيد
+/// [WholesalerOrdersScreen] — Wholesaler incoming orders list screen (Task 4.3)
+/// Includes:
+/// 1. Status filter chips (pending / approved / delivered / rejected / cancelled)
+/// 2. Real-time stream for orders
+/// 3. Pull-to-refresh
 class WholesalerOrdersScreen extends StatefulWidget {
   const WholesalerOrdersScreen({super.key});
 
@@ -50,10 +50,10 @@ class _WholesalerOrdersScreenState extends State<WholesalerOrdersScreen> {
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          // 1. شرائح تصفية الحالة (Status Chips) — Task 4.3.1
+          // 1. Status filter chips (Status Chips) — Task 4.3.1
           _buildFilterChips(provider),
 
-          // 2. قائمة الطلبات أو الحالات الخاصة
+          // 2. Orders list or empty/error states
           Expanded(
             child: _buildOrdersContent(provider),
           ),
@@ -143,7 +143,7 @@ class _WholesalerOrdersScreenState extends State<WholesalerOrdersScreen> {
   }
 
   Widget _buildOrdersContent(WholesalerOrdersProvider provider) {
-    // حالة الخطأ
+    // Error state
     if (provider.errorMessage != null && provider.ordersList.isEmpty) {
       return ErrorStateWidget(
         message: provider.errorMessage!,
@@ -151,14 +151,14 @@ class _WholesalerOrdersScreenState extends State<WholesalerOrdersScreen> {
       );
     }
 
-    // حالة التحميل الأولى
+    // Initial loading state
     if (provider.isLoadingOrders && provider.ordersList.isEmpty) {
       return const Center(
         child: CircularProgressIndicator(),
       );
     }
 
-    // حالة القائمة الفارغة
+    // Empty list state
     if (provider.ordersList.isEmpty) {
       return RefreshIndicator(
         onRefresh: provider.refreshOrders,
@@ -176,7 +176,7 @@ class _WholesalerOrdersScreenState extends State<WholesalerOrdersScreen> {
       );
     }
 
-    // عرض القائمة مع التحديث بالـ Pull-to-refresh
+    // List view with pull-to-refresh
     return RefreshIndicator(
       onRefresh: provider.refreshOrders,
       child: ListView.builder(

@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 import 'app/app.dart';
 import 'app/routing/app_router.dart';
@@ -9,10 +10,13 @@ import 'core/di/dependency_injection.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  // Preserve native splash screen to prevent visual flicker or jump
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+
   await EasyLocalization.ensureInitialized();
 
-  // إجبار اتجاه RTL للواجهة العربية
+  // Force portrait orientation
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -26,7 +30,7 @@ Future<void> main() async {
 
   await setupGetIt();
 
-  // Push Notifications مؤجَّلة (تحتاج Cloud Functions = Blaze).
+  // Push Notifications deferred (requires Cloud Functions on Blaze plan).
 
   runApp(
     EasyLocalization(

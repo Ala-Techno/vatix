@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:vatix/features/auth/domain/entities/user_entity.dart';
 import '../../domain/entities/customer_entity.dart';
 
-/// [CustomerModel] — تحويل مستند التاجر من Firestore إلى الكيان
+/// [CustomerModel] — Maps retailer document from Firestore to entity
 class CustomerModel extends CustomerEntity {
   const CustomerModel({
     required super.id,

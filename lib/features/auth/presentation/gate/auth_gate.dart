@@ -8,8 +8,8 @@ import 'package:vatix/features/auth/presentation/screens/blocked_screen.dart';
 import 'package:vatix/features/shell/retailer_shell.dart';
 import 'package:vatix/features/shell/wholesaler_shell.dart';
 
-/// [AuthGate] — البوابة المركزية للتوجيه.
-/// تستمع لـ AuthProvider وتعرض الشاشة المناسبة لكل حالة.
+/// [AuthGate] — Central routing gate.
+/// Listens to AuthProvider and displays the appropriate screen for each state.
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -19,7 +19,7 @@ class AuthGate extends StatelessWidget {
 
     switch (status) {
       case AuthStatus.unknown:
-        // جارٍ التحقق من الجلسة
+        // Checking session
         return const Scaffold(
           body: Center(child: CircularProgressIndicator()),
         );

@@ -2,7 +2,7 @@ import 'package:vatix/core/errors/api_result.dart';
 import 'package:vatix/core/utils/unit.dart';
 import '../entities/order_entity.dart';
 
-/// [OrdersPageResult] — نتيجة جلب صفحة طلبات مع دعم الـ Pagination
+/// [OrdersPageResult] — Result of fetching an orders page with pagination support
 class OrdersPageResult {
   final List<OrderEntity> orders;
   final dynamic lastDocument;
@@ -15,44 +15,51 @@ class OrdersPageResult {
   });
 }
 
-/// [OrdersRepository] — عقد الـ Domain لإدارة أوامر الشراء
+/// [OrdersRepository] — Domain contract for purchase order management
 abstract class OrdersRepository {
-  /// إرسال أمر شراء جديد وحفظه بحالة pending (مع دعم العمل دون اتصال E3)
+  /// Submits a new purchase order and saves it as pending (with offline support E3)
   Future<ApiResult<OrderEntity>> placeOrder({
     required OrderEntity order,
   });
 
-  /// استماع حيّ ولحظي لقائمة طلبات التاجر
+  /// Real-time stream of retailer orders list
   Stream<List<OrderEntity>> watchMyOrders({
     required String retailerId,
     int limit = 20,
   });
 
-  /// جلب صفحة طلبات إضافية مع الـ Pagination
+  /// Fetches an additional page of orders with pagination
   Future<ApiResult<OrdersPageResult>> getMyOrdersPage({
     required String retailerId,
     int limit = 20,
     dynamic startAfterDocument,
   });
 
-  /// استماع حيّ لتفاصيل وحالة طلب محدد
+  /// Real-time stream of specific order details and status
   Stream<OrderEntity?> watchOrder({
     required String orderId,
   });
 
-  /// إلغاء الطلب من قبل التاجر (مسموح فقط في حالة pending)
+  /// Cancels an order by retailer (permitted only in pending status)
   Future<ApiResult<Unit>> cancelOrder({
     required String orderId,
     required String retailerId,
   });
 
-  /// استماع لحظي للطلبات المعلقة للمورد (الحد الأقصى 50) للـ Dashboard والـ Badge
+  /// Real-time stream of pending orders for wholesaler (max 50) for Dashboard and Badge
   Stream<List<OrderEntity>> watchPendingOrdersForWholesaler({
     required String wholesalerId,
     int limit = 50,
   });
 
-  /// جلب صفحة من الطلبات الواردة للمورد مع الـ Pagination وإمكانية الفلترة بالحالة
+  /// Real-time stream of wholesaler orders filtered by status
+  Stream<List<OrderEntity>> watchWholesalerOrders({
+    required String wholesalerId,
+    OrderStatus? status,
+    int limit = 50,
+  });
+
+  /// Fetches a page of incoming wholesaler orders with pagination and optional status filter
   Future<ApiResult<OrdersPageResult>> getWholesalerOrdersPage({
     required String wholesalerId,
     OrderStatus? status,
@@ -60,20 +67,20 @@ abstract class OrdersRepository {
     dynamic startAfterDocument,
   });
 
-  /// اعتماد أمر الشراء ذرياً مع كتابة قيود الدفتر وتحديث الحسابات (Task 4.5)
+  /// Atomically approves purchase order, writes ledger entries, and updates accounts (Task 4.5)
   Future<ApiResult<Unit>> approveOrder({
     required OrderEntity order,
     required PaymentType paymentType,
     required String currentUid,
   });
 
-  /// رفض أمر الشراء مع سبب إلزامي (Task 4.6.1)
+  /// Rejects purchase order with a mandatory reason (Task 4.6.1)
   Future<ApiResult<Unit>> rejectOrder({
     required String orderId,
     required String rejectionReason,
   });
 
-  /// تأكيد تسليم أمر الشراء للتاجر (Task 4.6.2)
+  /// Confirms delivery of purchase order to retailer (Task 4.6.2)
   Future<ApiResult<Unit>> deliverOrder({
     required String orderId,
   });

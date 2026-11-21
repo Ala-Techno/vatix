@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'app_colors.dart';
 
-/// تكوين سمة التطبيق (Theme) — Material 3 مصمم لتطبيقات الأعمال B2B
+/// App theme configuration — Material 3 tailored for B2B commerce
 class AppTheme {
   const AppTheme._();
 
@@ -14,7 +14,7 @@ class AppTheme {
       useMaterial3: true,
       fontFamily: fontFamily,
 
-      // ── لوحة الألوان (Color Scheme) ─────────────────────────────────────────
+      // ── Color Scheme ────────────────────────────────────────────────────────
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         onPrimary: AppColors.onPrimary,
@@ -32,10 +32,10 @@ class AppTheme {
         shadow: AppColors.shadowColor,
       ),
 
-      // ── خلفية الشاشات (Scaffold) ───────────────────────────────────────────
+      // ── Scaffold Background ─────────────────────────────────────────────────
       scaffoldBackgroundColor: AppColors.background,
 
-      // ── شريط التطبيق العلوي (AppBar) ───────────────────────────────────────
+      // ── AppBar Theme ────────────────────────────────────────────────────────
       appBarTheme: const AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 1,
@@ -57,7 +57,7 @@ class AppTheme {
         ),
       ),
 
-      // ── الأزرار الأساسية (Elevated Button) ─────────────────────────────────
+      // ── Elevated Button Theme ───────────────────────────────────────────────
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
@@ -67,7 +67,7 @@ class AppTheme {
           elevation: 0,
           shadowColor: Colors.transparent,
           minimumSize: const Size(double.infinity, 50),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -75,17 +75,18 @@ class AppTheme {
             fontFamily: fontFamily,
             fontSize: 15,
             fontWeight: FontWeight.w700,
+            height: 1.25,
           ),
         ),
       ),
 
-      // ── الأزرار المحددة (Outlined Button) ───────────────────────────────────
+      // ── Outlined Button Theme ───────────────────────────────────────────────
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primary,
           disabledForegroundColor: AppColors.textHint,
           minimumSize: const Size(double.infinity, 50),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           side: const BorderSide(color: AppColors.primary, width: 1.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -94,23 +95,26 @@ class AppTheme {
             fontFamily: fontFamily,
             fontSize: 14,
             fontWeight: FontWeight.w700,
+            height: 1.25,
           ),
         ),
       ),
 
-      // ── الأزرار النصية (Text Button) ────────────────────────────────────────
+      // ── Text Button Theme ───────────────────────────────────────────────────
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primaryLight,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           textStyle: const TextStyle(
             fontFamily: fontFamily,
             fontSize: 14,
             fontWeight: FontWeight.w700,
+            height: 1.25,
           ),
         ),
       ),
 
-      // ── حقول الإدخال (Input Decoration) ────────────────────────────────────
+      // ── Input Decoration Theme ──────────────────────────────────────────────
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surface,
@@ -163,7 +167,7 @@ class AppTheme {
         suffixIconColor: AppColors.textSecondary,
       ),
 
-      // ── البطاقات (Card Theme) ──────────────────────────────────────────────
+      // ── Card Theme ──────────────────────────────────────────────────────────
       cardTheme: CardThemeData(
         color: AppColors.surface,
         elevation: 0,
@@ -176,14 +180,14 @@ class AppTheme {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       ),
 
-      // ── الفواصل (Divider Theme) ────────────────────────────────────────────
+      // ── Divider Theme ───────────────────────────────────────────────────────
       dividerTheme: const DividerThemeData(
         color: AppColors.divider,
         thickness: 1,
         space: 1,
       ),
 
-      // ── شريط التبويبات (TabBar Theme) ──────────────────────────────────────
+      // ── TabBar Theme ────────────────────────────────────────────────────────
       tabBarTheme: TabBarThemeData(
         labelColor: AppColors.primary,
         unselectedLabelColor: AppColors.textSecondary,
@@ -202,7 +206,7 @@ class AppTheme {
         ),
       ),
 
-      // ── رسائل التنبيه العائمة (SnackBar Theme) ──────────────────────────────
+      // ── SnackBar Theme ──────────────────────────────────────────────────────
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -213,7 +217,7 @@ class AppTheme {
         ),
       ),
 
-      // ── صناديق الحوار (Dialog Theme) ───────────────────────────────────────
+      // ── Dialog Theme ────────────────────────────────────────────────────────
       dialogTheme: DialogThemeData(
         elevation: 8,
         backgroundColor: AppColors.surface,
@@ -233,17 +237,30 @@ class AppTheme {
         ),
       ),
 
-      // ── الرقاقات (Chip Theme) ──────────────────────────────────────────────
+      // ── Chip Theme ──────────────────────────────────────────────────────────
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.surfaceVariant,
+        backgroundColor: const Color(0xFFE2E8F0), // Distinct Slate gray against white background
+        selectedColor: AppColors.primary,
+        disabledColor: AppColors.borderSubtle,
+        secondarySelectedColor: AppColors.primary,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         labelStyle: const TextStyle(
           fontFamily: fontFamily,
           fontSize: 12,
           fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        side: BorderSide.none,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        secondaryLabelStyle: const TextStyle(
+          fontFamily: fontFamily,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+        ),
+        showCheckmark: false,
       ),
     );
   }

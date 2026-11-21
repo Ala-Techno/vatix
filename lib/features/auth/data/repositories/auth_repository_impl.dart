@@ -7,8 +7,8 @@ import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_data_source.dart';
 
-/// تنفيذ AuthRepository — يربط DataSource بعقد Domain
-/// لا يعتمد على SharedPreferences للجلسة؛ المصدر الحقيقي = FirebaseAuth
+/// Implementation of AuthRepository — connects DataSource to Domain contracts.
+/// Does not rely on SharedPreferences for session; single source of truth = FirebaseAuth.
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource _remoteDataSource;
 

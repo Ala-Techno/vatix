@@ -7,7 +7,7 @@ import '../../domain/repositories/orders_repository.dart';
 import '../datasources/orders_remote_data_source.dart';
 import '../models/order_model.dart';
 
-/// [OrdersRepositoryImpl] — تنفيذ مستودع الطلبات مع إدارة الأخطاء وتحويل النماذج
+/// [OrdersRepositoryImpl] — Orders repository implementation with error handling and model conversion
 class OrdersRepositoryImpl implements OrdersRepository {
   final OrdersRemoteDataSource _remoteDataSource;
 
@@ -95,6 +95,19 @@ class OrdersRepositoryImpl implements OrdersRepository {
   }) {
     return _remoteDataSource.watchPendingOrdersForWholesaler(
       wholesalerId: wholesalerId,
+      limit: limit,
+    );
+  }
+
+  @override
+  Stream<List<OrderEntity>> watchWholesalerOrders({
+    required String wholesalerId,
+    OrderStatus? status,
+    int limit = 50,
+  }) {
+    return _remoteDataSource.watchWholesalerOrders(
+      wholesalerId: wholesalerId,
+      status: status?.name,
       limit: limit,
     );
   }

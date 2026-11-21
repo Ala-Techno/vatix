@@ -5,7 +5,7 @@ import '../../domain/entities/account_entity.dart';
 import '../../domain/entities/ledger_entry_entity.dart';
 import '../../domain/repositories/ledger_repository.dart';
 
-/// [RetailerAccountProvider] — إدارة حالة شاشة «حسابي» للتاجر (Task 5.5)
+/// [RetailerAccountProvider] — State management for retailer "My Account" screen (Task 5.5)
 class RetailerAccountProvider extends ChangeNotifier {
   final LedgerRepository _repository;
 
@@ -17,7 +17,7 @@ class RetailerAccountProvider extends ChangeNotifier {
   String? _wholesalerId;
   String? _retailerId;
 
-  // كشف حركات التاجر
+  // Retailer transaction statement
   bool _isLoadingEntries = false;
   bool _isLoadingMore = false;
   String? _statementError;
@@ -25,7 +25,7 @@ class RetailerAccountProvider extends ChangeNotifier {
   dynamic _lastDocument;
   bool _hasMore = false;
 
-  Currency? _selectedCurrency; // null = جميع العملات
+  Currency? _selectedCurrency; // null = all currencies
 
   // ─── Getters ─────────────────────────────────────────────────────────────
 
@@ -39,7 +39,7 @@ class RetailerAccountProvider extends ChangeNotifier {
 
   // ─── Methods ─────────────────────────────────────────────────────────────
 
-  /// تهيئة وبدء الاستماع اللحظي لرصيد التاجر مع مورده وجلب أول صفحة من كشف الحساب
+  /// Initializes real-time listener for retailer account balance and fetches first statement page
   void init({
     required String wholesalerId,
     required String retailerId,
@@ -53,7 +53,7 @@ class RetailerAccountProvider extends ChangeNotifier {
     _wholesalerId = wholesalerId;
     _retailerId = retailerId;
 
-    // استماع لحظي لبطاقات الأرصدة (Task 5.5.1)
+    // Real-time listener for balance cards (Task 5.5.1)
     _accountSub?.cancel();
     _accountSub = _repository
         .watchMyAccount(wholesalerId: wholesalerId, retailerId: retailerId)
@@ -65,7 +65,7 @@ class RetailerAccountProvider extends ChangeNotifier {
     loadInitialStatement();
   }
 
-  /// تحميل الصفحة الأولى من كشف الحركات (Task 5.5.2)
+  /// Load initial page of transaction statement (Task 5.5.2)
   Future<void> loadInitialStatement() async {
     if (_wholesalerId == null || _retailerId == null) return;
 
@@ -97,7 +97,7 @@ class RetailerAccountProvider extends ChangeNotifier {
     );
   }
 
-  /// تحميل الصفحة التالية (Pagination)
+  /// Load next page (Pagination)
   Future<void> loadMore() async {
     if (_isLoadingMore || !_hasMore || _lastDocument == null) return;
     if (_wholesalerId == null || _retailerId == null) return;
@@ -128,7 +128,7 @@ class RetailerAccountProvider extends ChangeNotifier {
     );
   }
 
-  /// تصفية كشف الحساب بعملة محددة
+  /// Filter statement by specific currency
   void setCurrencyFilter(Currency? currency) {
     if (_selectedCurrency != currency) {
       _selectedCurrency = currency;
@@ -142,4 +142,3 @@ class RetailerAccountProvider extends ChangeNotifier {
     super.dispose();
   }
 }
-

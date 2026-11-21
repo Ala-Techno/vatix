@@ -22,10 +22,15 @@ dependencies:
   firebase_auth: ^6.6.1
   cached_network_image: ^4.0.0
   shimmer: ^4.0.0
+  flutter_native_splash: ^2.4.8
 
   # مثبّتان لكن غير مفعّلين في الـ MVP (Push يحتاج Cloud Functions = Blaze).
   flutter_local_notifications: ^22.3.0
   firebase_messaging: ^16.6.0
+  url_launcher: ^6.3.3
+  firebase_storage: ^13.6.1
+  image_picker: ^1.2.4
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:
@@ -36,8 +41,18 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/app_logo.png"
+  image_path: "assets/images/vatix_splash_icon.png"
   remove_alpha_ios: true
+  background_color_ios: "#FFFFFF" # أو لون الشعار الكحلي
+
+flutter_native_splash:
+  color: "#F7F9FC" # لون خلفية الشاشة (بدلاً من الأسود)
+  image: "assets/images/vatix_splash_icon.png"
+
+  android_12:
+    image: "assets/images/vatix_splash_icon.png"
+    icon_background_color: "#F7F9FC" # لون خلفية الدائرة في أندرويد 12+
+    color: "#F7F9FC"
 
 flutter:
   uses-material-design: true

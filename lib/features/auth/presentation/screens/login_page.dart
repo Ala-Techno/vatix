@@ -5,7 +5,7 @@ import 'package:vatix/features/auth/presentation/providers/auth_provider.dart';
 import 'package:vatix/features/auth/presentation/screens/register_screen.dart';
 import 'package:vatix/features/auth/presentation/screens/reset_password_screen.dart';
 
-/// [LoginPage] — شاشة تسجيل الدخول المحدثة بتصميم Material 3 مخصص للأعمال B2B
+/// [LoginPage] — Login screen with Material 3 B2B design
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -81,11 +81,11 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // ─── شعار وهوية التطبيق ────────────────────────
+                  // ─── Brand & Logo Header ────────────────────────
                   _buildBrandHeader(theme),
                   const SizedBox(height: 36),
 
-                  // ─── بطاقة تسجيل الدخول ─────────────────────────
+                  // ─── Login Card ─────────────────────────────────
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
@@ -120,7 +120,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 24),
 
-                        // حقل البريد الإلكتروني
+                        // Email input field
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
@@ -142,7 +142,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 16),
 
-                        // حقل كلمة المرور
+                        // Password input field
                         TextFormField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
@@ -178,7 +178,7 @@ class _LoginPageState extends State<LoginPage> {
                           },
                         ),
 
-                        // نسيت كلمة المرور
+                        // Forgot password
                         Align(
                           alignment: AlignmentDirectional.centerEnd,
                           child: TextButton(
@@ -199,22 +199,22 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 12),
 
-                        // زر تسجيل الدخول
+                        // Login button
                         Consumer<AuthProvider>(
                           builder: (_, provider, __) => SizedBox(
                             height: 52,
                             child: ElevatedButton(
                               onPressed: provider.isLoading ? null : _handleLogin,
                               child: provider.isLoading
-                                  ? const SizedBox(
-                                      width: 22,
-                                      height: 22,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2.5,
-                                      ),
-                                    )
-                                  : const Text('دخول'),
+                                   ? const SizedBox(
+                                       width: 22,
+                                       height: 22,
+                                       child: CircularProgressIndicator(
+                                         color: Colors.white,
+                                         strokeWidth: 2.5,
+                                       ),
+                                     )
+                                   : const Text('دخول'),
                             ),
                           ),
                         ),
@@ -223,7 +223,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 24),
 
-                  // ─── رابط إنشاء حساب تاجر جديد ───────────────────
+                  // ─── Register new retailer link ──────────────────
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

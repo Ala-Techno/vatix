@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:vatix/core/theme/app_colors.dart';
 import 'package:vatix/features/auth/presentation/providers/auth_provider.dart';
 
-/// [BlockedScreen] — شاشة «الحساب موقوف» — Material 3
+/// [BlockedScreen] — "Account Blocked" screen — Material 3
 class BlockedScreen extends StatelessWidget {
   const BlockedScreen({super.key});
 

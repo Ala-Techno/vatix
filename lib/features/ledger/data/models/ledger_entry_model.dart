@@ -2,9 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:vatix/core/utils/currency.dart';
 import '../../domain/entities/ledger_entry_entity.dart';
 
-/// [LedgerEntryModel] — تمثيل قيد دفتر الأستاذ المتصل بـ Firestore (Data Layer)
+/// [LedgerEntryModel] — Ledger entry representation connected to Firestore (Data Layer)
 ///
-/// مسار المستند: `ledger/{id}`
+/// Document path: `ledger/{id}`
 class LedgerEntryModel extends LedgerEntryEntity {
   const LedgerEntryModel({
     required super.id,
@@ -21,7 +21,7 @@ class LedgerEntryModel extends LedgerEntryEntity {
     required super.createdAt,
   });
 
-  /// إنشاء نموذج من [LedgerEntryEntity]
+  /// Creates a model from [LedgerEntryEntity]
   factory LedgerEntryModel.fromEntity(LedgerEntryEntity entity) {
     return LedgerEntryModel(
       id: entity.id,
@@ -39,7 +39,7 @@ class LedgerEntryModel extends LedgerEntryEntity {
     );
   }
 
-  /// تحويل من مستند Firestore [DocumentSnapshot]
+  /// Converts from Firestore [DocumentSnapshot]
   factory LedgerEntryModel.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
   ) {
@@ -47,14 +47,14 @@ class LedgerEntryModel extends LedgerEntryEntity {
     return LedgerEntryModel.fromFirestoreMap(doc.id, data);
   }
 
-  /// تحويل من [QueryDocumentSnapshot] (للاستعلامات)
+  /// Converts from [QueryDocumentSnapshot] (for queries)
   factory LedgerEntryModel.fromQueryDoc(
     QueryDocumentSnapshot<Map<String, dynamic>> doc,
   ) {
     return LedgerEntryModel.fromFirestoreMap(doc.id, doc.data());
   }
 
-  /// المنطق الداخلي لتحليل الخريطة القادمة من Firestore
+  /// Internal logic to parse map from Firestore
   factory LedgerEntryModel.fromFirestoreMap(
     String id,
     Map<String, dynamic> data,
@@ -87,7 +87,7 @@ class LedgerEntryModel extends LedgerEntryEntity {
     );
   }
 
-  /// تحويل إلى Map لحفظه في Firestore
+  /// Converts to Map for saving in Firestore
   Map<String, dynamic> toFirestoreMap() {
     return {
       'wholesalerId': wholesalerId,

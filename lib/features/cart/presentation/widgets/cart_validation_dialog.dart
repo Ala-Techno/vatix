@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:vatix/core/theme/app_colors.dart';
 import 'package:vatix/features/cart/domain/entities/cart_validation_result.dart';
 
-/// [CartValidationDialog] — حوار عرض الفروقات المكتشفة في السلة قبل تأكيد الطلب
+/// [CartValidationDialog] — Dialog displaying detected discrepancies in the cart prior to order checkout.
 class CartValidationDialog extends StatelessWidget {
   final CartValidationResult validationResult;
 
@@ -11,7 +11,7 @@ class CartValidationDialog extends StatelessWidget {
     required this.validationResult,
   });
 
-  /// عرض الحوار وإرجاع true إن وافق المستخدم على المتابعة بالأسعار والتحديثات الجديدة
+  /// Displays the dialog and returns true if user agrees to proceed with new prices/updates.
   static Future<bool?> show(
     BuildContext context, {
     required CartValidationResult validationResult,
@@ -79,7 +79,7 @@ class CartValidationDialog extends StatelessWidget {
               ),
               const SizedBox(height: 14),
 
-              // قائمة الفروقات المكتشفة
+              // Detected discrepancies list
               ...discrepancies.map((d) => _buildDiscrepancyItem(d)),
 
               const SizedBox(height: 8),

@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:vatix/core/theme/app_colors.dart';
 import 'package:vatix/features/auth/presentation/providers/auth_provider.dart';
 
-/// [NoProfileScreen] — شاشة «تعذّر تحميل بيانات الحساب» — Material 3
+/// [NoProfileScreen] — "Profile failed to load" screen — Material 3
 class NoProfileScreen extends StatelessWidget {
   const NoProfileScreen({super.key});
 

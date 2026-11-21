@@ -8,7 +8,7 @@ import '../../domain/entities/account_entity.dart';
 import '../../domain/repositories/ledger_repository.dart';
 import '../../domain/usecases/reconcile_ledger_use_case.dart';
 
-/// [ReconciliationDialog] — أداة مطابقة القيود مع الرصيد (Task 5.7 — للتطوير فقط)
+/// [ReconciliationDialog] — Ledger reconciliation tool (Task 5.7 — debug only)
 class ReconciliationDialog extends StatefulWidget {
   final AccountEntity account;
 
@@ -84,7 +84,7 @@ class _ReconciliationDialogState extends State<ReconciliationDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. عنوان الأداة
+              // 1. Tool header
               Row(
                 children: [
                   Container(
@@ -131,7 +131,7 @@ class _ReconciliationDialogState extends State<ReconciliationDialog> {
               ),
               const SizedBox(height: 14),
 
-              // 2. تحذير صريح: «تقرأ كل القيود، للتطوير فقط» (Task 5.7.2)
+              // 2. Explicit warning: reads all entries, debug only (Task 5.7.2)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
@@ -165,7 +165,7 @@ class _ReconciliationDialogState extends State<ReconciliationDialog> {
               ),
               const Divider(height: 24),
 
-              // 3. المحتوى
+              // 3. Content
               if (_isLoading) ...[
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 36),
@@ -228,7 +228,7 @@ class _ReconciliationDialogState extends State<ReconciliationDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // نتيجة المطابقة الإجمالية
+        // Overall match result
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -287,7 +287,7 @@ class _ReconciliationDialogState extends State<ReconciliationDialog> {
         ),
         const SizedBox(height: 14),
 
-        // بطاقات المطابقة لكل عملة
+        // Per-currency reconciliation cards
         ...Currency.values.map((currency) {
           final item = report.items[currency];
           if (item == null) return const SizedBox.shrink();

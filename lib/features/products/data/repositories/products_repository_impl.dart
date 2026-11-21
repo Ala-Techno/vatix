@@ -7,7 +7,7 @@ import '../../domain/entities/product_entity.dart';
 import '../../domain/repositories/products_repository.dart';
 import '../datasources/products_remote_data_source.dart';
 
-/// [ProductsRepositoryImpl] — تطبيق مستودع المنتجات
+/// [ProductsRepositoryImpl] — Products repository implementation
 class ProductsRepositoryImpl implements ProductsRepository {
   final ProductsRemoteDataSource _remoteDataSource;
 
@@ -117,6 +117,19 @@ class ProductsRepositoryImpl implements ProductsRepository {
     } catch (e) {
       return ApiFailure(ServerFailure('تعذّر حذف المنتج: $e'));
     }
+  }
+
+  @override
+  Stream<List<ProductEntity>> watchWholesalerProducts({
+    required String wholesalerId,
+    bool activeOnly = true,
+  }) {
+    return _remoteDataSource
+        .watchWholesalerProducts(
+          wholesalerId: wholesalerId,
+          activeOnly: activeOnly,
+        )
+        .map((products) => List<ProductEntity>.from(products));
   }
 
   @override

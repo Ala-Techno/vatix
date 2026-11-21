@@ -1,11 +1,11 @@
 import 'package:vatix/core/utils/currency.dart';
 
-/// [LedgerEntryType] — نوع قيد دفتر الأستاذ
+/// [LedgerEntryType] — Ledger entry classification type
 enum LedgerEntryType {
-  /// دين: نشأ من اعتماد أمر شراء بالأجل
+  /// Debt: generated when a purchase order is approved on credit
   debt('DEBT', 'دين'),
 
-  /// دفعة: سداد من التاجر
+  /// Payment: payment made by retailer
   payment('PAYMENT', 'دفعة');
 
   final String code;
@@ -13,15 +13,15 @@ enum LedgerEntryType {
 
   const LedgerEntryType(this.code, this.arabicLabel);
 
-  /// تحويل النص القادم من Firestore إلى [LedgerEntryType]
+  /// Parse string from Firestore to [LedgerEntryType]
   static LedgerEntryType fromString(String value) {
     return LedgerEntryType.values.firstWhere(
       (t) => t.code == value.toUpperCase(),
-      orElse: () => throw ArgumentError('نوع قيد غير مدعوم: $value'),
+      orElse: () => throw ArgumentError('Unsupported ledger entry type: $value'),
     );
   }
 
-  /// تحويل آمن يرجع null عند الخطأ
+  /// Safe conversion returning null on error
   static LedgerEntryType? tryFromString(String? value) {
     if (value == null) return null;
     try {
@@ -32,7 +32,7 @@ enum LedgerEntryType {
   }
 }
 
-/// [PaymentMethod] — طريقة السداد المالي (نقد / حوالة / شيك)
+/// [PaymentMethod] — Financial settlement method (cash / transfer / check)
 enum PaymentMethod {
   cash('CASH', 'نقد'),
   transfer('TRANSFER', 'حوالة'),
@@ -46,7 +46,7 @@ enum PaymentMethod {
   static PaymentMethod fromString(String value) {
     return PaymentMethod.values.firstWhere(
       (m) => m.code == value.toUpperCase(),
-      orElse: () => throw ArgumentError('طريقة سداد غير مدعومة: $value'),
+      orElse: () => throw ArgumentError('Unsupported payment method: $value'),
     );
   }
 
@@ -60,46 +60,46 @@ enum PaymentMethod {
   }
 }
 
-/// [LedgerEntryEntity] — كيان قيد دفتر الأستاذ (Domain Layer)
+/// [LedgerEntryEntity] — Ledger entry entity (Domain Layer)
 ///
-/// يمثل حركة واحدة في حساب تاجر/جملة:
-/// - DEBT: نشأ تلقائياً عند اعتماد أمر شراء بالأجل
-/// - PAYMENT: تسجيل عند استلام الجملة دفعةً نقدية/حوالة/شيك
+/// Represents a single transaction entry in retailer/wholesaler account:
+/// - DEBT: automatically recorded upon approving an order on credit
+/// - PAYMENT: recorded when wholesaler receives cash/transfer/check payment
 class LedgerEntryEntity {
-  /// المعرف الفريد للقيد في Firestore
+  /// Unique document ID in Firestore
   final String id;
 
-  /// معرف الجملة (wholesaler)
+  /// Wholesaler UID
   final String wholesalerId;
 
-  /// معرف التاجر (retailer)
+  /// Retailer UID
   final String retailerId;
 
-  /// نوع القيد: DEBT أو PAYMENT
+  /// Entry type: DEBT or PAYMENT
   final LedgerEntryType type;
 
-  /// المبلغ بأصغر وحدة نقدية (subunits) — دائماً موجب
+  /// Amount in smallest currency subunits — always non-negative
   final int amount;
 
-  /// العملة
+  /// Currency
   final Currency currency;
 
-  /// معرف أمر الشراء المرتبط (فارغ لقيود الدفع اليدوية)
+  /// Related purchase order ID (empty for manual payment entries)
   final String orderId;
 
-  /// معرف مُنشئ القيد (UID من Firebase Auth)
+  /// Creator UID (from Firebase Auth)
   final String createdBy;
 
-  /// طريقة السداد (نقد، حوالة، شيك) في حالة PAYMENT
+  /// Payment method in case of PAYMENT
   final PaymentMethod? method;
 
-  /// رقم المرجع أو الحوالة أو السند
+  /// Reference / receipt / transfer number
   final String? reference;
 
-  /// ملاحظة اختيارية
+  /// Optional note
   final String? note;
 
-  /// تاريخ إنشاء القيد
+  /// Entry creation timestamp
   final DateTime createdAt;
 
   const LedgerEntryEntity({
@@ -115,7 +115,7 @@ class LedgerEntryEntity {
     this.reference,
     this.note,
     required this.createdAt,
-  }) : assert(amount >= 0, 'المبلغ يجب أن يكون موجباً أو صفراً');
+  }) : assert(amount >= 0, 'Amount must be non-negative');
 
   @override
   bool operator ==(Object other) =>

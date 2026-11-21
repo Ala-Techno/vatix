@@ -1,12 +1,12 @@
-/// [Currency] — العملات المعتمدة في نظام Vatix (B2B).
-/// ثلاث عملات فقط: ريال يمني (YER)، ريال سعودي (SAR)، دولار أمريكي (USD).
-/// يُخزَّن المبلغ دائماً كـ int بأصغر وحدة نقدية حسب عدد الخانات العشرية (decimals).
+/// [Currency] — Supported currencies in Vatix B2B system.
+/// Three currencies only: Yemeni Rial (YER), Saudi Riyal (SAR), US Dollar (USD).
+/// Amounts are always stored as int in smallest sub-units based on decimals.
 enum Currency {
-  yer, // ريال يمني (decimals = 0)
-  sar, // ريال سعودي (decimals = 2)
-  usd; // دولار أمريكي (decimals = 2)
+  yer, // Yemeni Rial (decimals = 0)
+  sar, // Saudi Riyal (decimals = 2)
+  usd; // US Dollar (decimals = 2)
 
-  /// كود العملة القياسي المعتمد للتخزين في Firestore
+  /// Standard currency code stored in Firestore
   String get code {
     switch (this) {
       case Currency.yer:
@@ -18,7 +18,7 @@ enum Currency {
     }
   }
 
-  /// الاسم العربي للعملة
+  /// Arabic display name of the currency
   String get arabicName {
     switch (this) {
       case Currency.yer:
@@ -30,7 +30,7 @@ enum Currency {
     }
   }
 
-  /// رمز العملة المختصر للعرض في الواجهة
+  /// Short currency symbol for UI display
   String get symbol {
     switch (this) {
       case Currency.yer:
@@ -42,7 +42,7 @@ enum Currency {
     }
   }
 
-  /// عدد الخانات العشرية للعملة
+  /// Decimal places for the currency
   int get decimals {
     switch (this) {
       case Currency.yer:
@@ -53,7 +53,7 @@ enum Currency {
     }
   }
 
-  /// المعامل الحسابي للتحويل بين الوحدة الأساسية والأصغر (10^decimals)
+  /// Multiplier to convert between main unit and smallest sub-unit (10^decimals)
   int get multiplier {
     switch (this) {
       case Currency.yer:
@@ -64,7 +64,7 @@ enum Currency {
     }
   }
 
-  /// تحويل النص القادم من Firestore أو الـ API إلى [Currency]
+  /// Parse currency code from Firestore / API string into [Currency]
   static Currency fromString(String value) {
     switch (value.trim().toUpperCase()) {
       case 'YER':
@@ -78,7 +78,7 @@ enum Currency {
     }
   }
 
-  /// تحويل آمن يرجع null عند الخطأ
+  /// Safe parse returning null on invalid code
   static Currency? tryFromString(String? value) {
     if (value == null) return null;
     try {
@@ -88,7 +88,7 @@ enum Currency {
     }
   }
 
-  /// تحويل إلى نص كبير للتخزين في Firestore
+  /// Format as uppercase code for Firestore storage
   String toFirestoreString() => code;
 }
 

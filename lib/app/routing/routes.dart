@@ -1,18 +1,21 @@
 abstract class Routes {
   const Routes._();
 
-  /// نقطة البداية — AuthGate يتولى التوجيه من هنا
-  static const String gate = '/';
+  /// Splash screen
+  static const String splash = '/';
 
-  /// إعادة تعيين كلمة المرور (تُفتح من LoginPage)
+  /// Central routing gate
+  static const String gate = '/gate';
+
+  /// Reset password (opened from LoginPage)
   static const String resetPassword = '/resetPassword';
 
-  /// تأكيد أمر الشراء
+  /// Purchase order checkout
   static const String checkout = '/checkout';
 
-  /// نجاح إرسال أمر الشراء
+  /// Purchase order success
   static const String orderSuccess = '/orderSuccess';
 
-  /// تفاصيل أمر الشراء
+  /// Purchase order details
   static const String orderDetails = '/orderDetails';
 }

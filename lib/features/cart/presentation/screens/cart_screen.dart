@@ -10,8 +10,8 @@ import 'package:vatix/features/cart/presentation/widgets/cart_summary_bar.dart';
 import 'package:vatix/features/cart/presentation/widgets/cart_validation_dialog.dart';
 import 'package:vatix/features/products/domain/repositories/products_repository.dart';
 
-/// [CartScreen] — شاشة سلة المشتريات لتاجر التجزئة
-/// تعرض أصناف السلة الحالية مع إجمالي كل عملة والتحقق من الأسعار قبل المتابعة
+/// [CartScreen] — Retailer shopping cart screen.
+/// Displays current cart items with total per currency and validates prices prior to proceeding.
 class CartScreen extends StatelessWidget {
   final VoidCallback? onBrowseCatalog;
   final VoidCallback? onProceedToCheckout;
@@ -75,7 +75,7 @@ class CartScreen extends StatelessWidget {
             )
           : Column(
               children: [
-                // بنر توجيهي عن السلة
+                // Cart info banner
                 Container(
                   margin: const EdgeInsets.fromLTRB(16, 12, 16, 6),
                   padding:
@@ -107,7 +107,7 @@ class CartScreen extends StatelessWidget {
                   ),
                 ),
 
-                // قائمة الأصناف
+                // Items list
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.only(top: 6, bottom: 16),
@@ -125,7 +125,7 @@ class CartScreen extends StatelessWidget {
                   ),
                 ),
 
-                // شريط الإجماليات والمتابعة
+                // Summary bar and checkout action
                 CartSummaryBar(
                   totalsByCurrency: cart.totalsByCurrency,
                   isLoading: cart.isValidating,
@@ -150,7 +150,7 @@ class CartScreen extends StatelessWidget {
     }
   }
 
-  /// إعادة التحقق قبل الانتقال لشاشة إرسال الطلب (Task 3.2)
+  /// Re-validate prior to proceeding to checkout screen (Task 3.2)
   Future<void> _handleProceed(BuildContext context, CartProvider cart) async {
     final repository = getIt<ProductsRepository>();
     final validation = await cart.validateCart(repository);
@@ -158,7 +158,7 @@ class CartScreen extends StatelessWidget {
     if (!context.mounted) return;
 
     if (validation.hasDiscrepancies) {
-      // إظهار حوار الفروقات
+      // Show discrepancies dialog
       final accepted = await CartValidationDialog.show(
         context,
         validationResult: validation,
@@ -171,7 +171,7 @@ class CartScreen extends StatelessWidget {
       }
     }
 
-    // الانتقال لخطوة تأكيد الطلب
+    // Proceed to order confirmation step
     if (onProceedToCheckout != null) {
       onProceedToCheckout!();
     } else {

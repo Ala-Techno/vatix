@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../theme/app_colors.dart';
 
-/// [ShimmerLoading] — ويدجت التحميل بتأثير البريق (Shimmer Effect) الموحد
+/// [ShimmerLoading] — Unified shimmer loading effect widget
 class ShimmerLoading extends StatelessWidget {
   final Widget child;
 
@@ -18,7 +18,7 @@ class ShimmerLoading extends StatelessWidget {
   }
 }
 
-/// هيكل تحميل عظمي (Skeleton Box) مرن
+/// Flexible skeleton loading box
 class ShimmerBox extends StatelessWidget {
   final double? width;
   final double height;
@@ -47,7 +47,7 @@ class ShimmerBox extends StatelessWidget {
   }
 }
 
-/// هيكل تحميل بطاقة التاجر (CustomerCard Shimmer) — متناسق مع الأبعاد الجديدة
+/// Customer card shimmer loading skeleton
 class ShimmerCustomerCard extends StatelessWidget {
   const ShimmerCustomerCard({super.key});
 
@@ -116,7 +116,7 @@ class ShimmerCustomerCard extends StatelessWidget {
   }
 }
 
-/// هيكل تحميل بطاقة كود الدعوة (InviteCodeCard Shimmer) — متناسق مع الأبعاد الجديدة
+/// Invite code card shimmer loading skeleton
 class ShimmerInviteCard extends StatelessWidget {
   const ShimmerInviteCard({super.key});
 
@@ -154,7 +154,7 @@ class ShimmerInviteCard extends StatelessWidget {
   }
 }
 
-/// هيكل تحميل بطاقة المنتج (ProductCard Shimmer)
+/// Product card shimmer loading skeleton
 class ShimmerProductCard extends StatelessWidget {
   const ShimmerProductCard({super.key});
 

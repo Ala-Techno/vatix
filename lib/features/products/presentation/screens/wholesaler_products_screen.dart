@@ -8,8 +8,8 @@ import '../providers/wholesaler_products_provider.dart';
 import '../widgets/wholesaler_product_card.dart';
 import 'add_edit_product_screen.dart';
 
-/// [WholesalerProductsScreen] — شاشة إدارة منتجات المورد
-/// تدعم: البحث اللحظي، شرائح التصنيفات، التمرير اللانهائي (Pagination)، والسحب للتحديث
+/// [WholesalerProductsScreen] — Wholesaler products management screen
+/// Supports: real-time search, category chips, pagination (infinite scroll), and pull-to-refresh
 class WholesalerProductsScreen extends StatefulWidget {
   const WholesalerProductsScreen({super.key});
 
@@ -31,7 +31,7 @@ class _WholesalerProductsScreenState extends State<WholesalerProductsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = context.read<AuthProvider>().user;
       if (user != null) {
-        context.read<WholesalerProductsProvider>().loadProducts(
+        context.read<WholesalerProductsProvider>().startListening(
               wholesalerId: user.id,
             );
       }
@@ -91,7 +91,7 @@ class _WholesalerProductsScreenState extends State<WholesalerProductsScreen> {
       ),
       body: Column(
         children: [
-          // ── شريط البحث والتصفية ─────────────────────────────────────
+          // ── Search & filter bar ─────────────────────────────────────────
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             color: AppColors.surface,
@@ -115,7 +115,7 @@ class _WholesalerProductsScreenState extends State<WholesalerProductsScreen> {
             ),
           ),
 
-          // ── شرائح التصنيفات الأفقية (Categorization Chips) ─────────────
+          // ── Horizontal category chips (Categorization Chips) ─────────────
           if (provider.categories.isNotEmpty)
             Container(
               height: 44,
@@ -145,7 +145,7 @@ class _WholesalerProductsScreenState extends State<WholesalerProductsScreen> {
               ),
             ),
 
-          // ── القائمة الرئيسية ─────────────────────────────────────────
+          // ── Main list ─────────────────────────────────────────────────
           Expanded(
             child: RefreshIndicator(
               onRefresh: _handleRefresh,
@@ -232,19 +232,20 @@ class _WholesalerProductsScreenState extends State<WholesalerProductsScreen> {
         style: TextStyle(
           fontFamily: 'Cairo',
           fontSize: 12,
-          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-          color: isSelected ? Colors.white : AppColors.textSecondary,
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+          color: isSelected ? Colors.white : AppColors.textPrimary,
         ),
       ),
       selected: isSelected,
       selectedColor: AppColors.primary,
-      backgroundColor: AppColors.surfaceVariant,
+      backgroundColor: const Color(0xFFF1F5F9),
       onSelected: (_) => onTap(),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
       ),
       side: BorderSide(
-        color: isSelected ? AppColors.primary : AppColors.borderSubtle,
+        color: isSelected ? AppColors.primary : const Color(0xFFCBD5E1),
+        width: 1,
       ),
     );
   }

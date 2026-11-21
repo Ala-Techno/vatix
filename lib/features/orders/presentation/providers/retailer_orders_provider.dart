@@ -7,7 +7,7 @@ import '../../domain/entities/order_entity.dart';
 import '../../domain/repositories/orders_repository.dart';
 import '../../domain/usecases/place_order_use_case.dart';
 
-/// [RetailerOrdersProvider] — إدارة حالة طلبات التاجر والتفاعل معها لحظياً
+/// [RetailerOrdersProvider] — State management for retailer orders and real-time interaction
 class RetailerOrdersProvider extends ChangeNotifier {
   final OrdersRepository _ordersRepository;
   final PlaceOrderUseCase _placeOrderUseCase;
@@ -35,16 +35,21 @@ class RetailerOrdersProvider extends ChangeNotifier {
   bool get isCanceling => _isCanceling;
   bool get hasOrders => _orders.isNotEmpty;
 
-  /// بدء الاستماع اللحظي لطلبات التاجر (Real-time Stream)
-  void startListening(String retailerId) {
-    if (_currentRetailerId == retailerId && _ordersSubscription != null) {
-      return;
-    }
+  /// Starts real-time stream for retailer orders
+  void startListening(String retailerId, {bool force = false}) {
+    if (retailerId.isEmpty) return;
 
+    // Clean any prior subscription to establish a reliable fresh stream
     _currentRetailerId = retailerId;
-    _isLoading = true;
+    if (_orders.isEmpty) {
+      _isLoading = true;
+    }
     _errorMessage = null;
-    notifyListeners();
+
+    // Use microtask to avoid notifyListeners during build phase
+    Future.microtask(() {
+      notifyListeners();
+    });
 
     _ordersSubscription?.cancel();
     _ordersSubscription = _ordersRepository
@@ -64,7 +69,25 @@ class RetailerOrdersProvider extends ChangeNotifier {
     );
   }
 
-  /// إرسال أمر شراء جديد مع حارس ضد الضغط المزدوج
+  /// Resets state completely on logout
+  void reset() {
+    _ordersSubscription?.cancel();
+    _ordersSubscription = null;
+    _currentRetailerId = null;
+    _orders = [];
+    _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  /// Forces reloading orders on pull-to-refresh
+  Future<void> refreshOrders() async {
+    if (_currentRetailerId != null && _currentRetailerId!.isNotEmpty) {
+      startListening(_currentRetailerId!, force: true);
+    }
+  }
+
+  /// Submits new purchase order with double-tap guard and immediate local insertion
   Future<ApiResult<OrderEntity>> placeOrder(PlaceOrderParams params) async {
     if (_isPlacingOrder) {
       return ApiFailure(
@@ -78,6 +101,15 @@ class RetailerOrdersProvider extends ChangeNotifier {
     try {
       final result = await _placeOrderUseCase(params);
       _isPlacingOrder = false;
+
+      // Optimistic instant insertion into top of list so it appears immediately
+      if (result is Success<OrderEntity>) {
+        final newOrder = result.data;
+        if (!_orders.any((o) => o.id == newOrder.id)) {
+          _orders.insert(0, newOrder);
+        }
+      }
+
       notifyListeners();
       return result;
     } catch (e) {
@@ -89,7 +121,7 @@ class RetailerOrdersProvider extends ChangeNotifier {
     }
   }
 
-  /// إلغاء أمر شراء قيد الانتظار (Pending)
+  /// Cancels a pending purchase order
   Future<ApiResult<Unit>> cancelOrder({
     required String orderId,
     required String retailerId,
@@ -113,9 +145,32 @@ class RetailerOrdersProvider extends ChangeNotifier {
     return result;
   }
 
-  /// استماع مباشر لطلب فردي (تفاصيل الطلب)
+  /// Direct stream for single order details
   Stream<OrderEntity?> watchSingleOrder(String orderId) {
     return _ordersRepository.watchOrder(orderId: orderId);
+  }
+
+  /// Immediate local insertion of new order at the top of the list
+  void addOrderLocally(OrderEntity order) {
+    final index = _orders.indexWhere((o) => o.id == order.id);
+    if (index == -1) {
+      _orders.insert(0, order);
+      _isLoading = false;
+      _errorMessage = null;
+      notifyListeners();
+    }
+  }
+
+  /// Immediate local update of order status upon fetching or updating
+  void updateOrderLocally(OrderEntity updatedOrder) {
+    final index = _orders.indexWhere((o) => o.id == updatedOrder.id);
+    if (index != -1) {
+      if (_orders[index].status != updatedOrder.status ||
+          _orders[index].updatedAt != updatedOrder.updatedAt) {
+        _orders[index] = updatedOrder;
+        notifyListeners();
+      }
+    }
   }
 
   @override

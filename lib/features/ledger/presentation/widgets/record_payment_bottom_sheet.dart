@@ -9,7 +9,7 @@ import '../../domain/entities/account_entity.dart';
 import '../../domain/entities/ledger_entry_entity.dart';
 import '../providers/retailer_statement_provider.dart';
 
-/// [RecordPaymentBottomSheet] — نافذة تسجيل دفعة وسداد مالي للتاجر (Tasks 5.3.2 & 5.4)
+/// [RecordPaymentBottomSheet] — Modal bottom sheet for recording payment/settlement (Tasks 5.3.2 & 5.4)
 class RecordPaymentBottomSheet extends StatefulWidget {
   final AccountEntity account;
 
@@ -18,7 +18,10 @@ class RecordPaymentBottomSheet extends StatefulWidget {
     required this.account,
   });
 
-  static Future<bool?> show(BuildContext context, AccountEntity account) {
+static Future<bool?> show(BuildContext context, AccountEntity account) {
+    // 1. Capture Provider from current screen context
+    final statementProvider = context.read<RetailerStatementProvider>();
+
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -27,7 +30,11 @@ class RecordPaymentBottomSheet extends StatefulWidget {
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(ctx).viewInsets.bottom,
         ),
-        child: RecordPaymentBottomSheet(account: account),
+        // 2. Inject Provider to make it accessible inside modal bottom sheet
+        child: ChangeNotifierProvider.value(
+          value: statementProvider,
+          child: RecordPaymentBottomSheet(account: account),
+        ),
       ),
     );
   }
@@ -51,7 +58,7 @@ class _RecordPaymentBottomSheetState extends State<RecordPaymentBottomSheet> {
   @override
   void initState() {
     super.initState();
-    // اختيار أول عملة عليها دين موجب، أو الافتراضية
+    // Pick the first currency that has a positive debt, or default
     final currenciesWithDebt = widget.account.balances.entries
         .where((e) => e.value > 0)
         .map((e) => e.key)
@@ -92,7 +99,7 @@ class _RecordPaymentBottomSheetState extends State<RecordPaymentBottomSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // مقبض السحب العلوي
+              // Top drag handle
               Center(
                 child: Container(
                   width: 44,
@@ -105,7 +112,7 @@ class _RecordPaymentBottomSheetState extends State<RecordPaymentBottomSheet> {
               ),
               const SizedBox(height: 16),
 
-              // العنوان
+              // Header title
               Row(
                 children: [
                   Container(
@@ -166,7 +173,7 @@ class _RecordPaymentBottomSheetState extends State<RecordPaymentBottomSheet> {
                   ),
                 ),
               ] else ...[
-                // 1. اختيار العملة
+                // 1. Currency selection
                 const Text(
                   'العملة المراد سدادها',
                   style: TextStyle(
@@ -208,7 +215,7 @@ class _RecordPaymentBottomSheetState extends State<RecordPaymentBottomSheet> {
                 ),
                 const SizedBox(height: 16),
 
-                // رصيد العملة المحدد
+                // Selected currency balance
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -251,7 +258,7 @@ class _RecordPaymentBottomSheetState extends State<RecordPaymentBottomSheet> {
                 ),
                 const SizedBox(height: 16),
 
-                // 2. إدخال مبلغ السداد
+                // 2. Amount input
                 TextFormField(
                   controller: _amountController,
                   keyboardType:
@@ -287,7 +294,7 @@ class _RecordPaymentBottomSheetState extends State<RecordPaymentBottomSheet> {
                 ),
                 const SizedBox(height: 16),
 
-                // 3. طريقة السداد
+                // 3. Payment method
                 const Text(
                   'طريقة السداد',
                   style: TextStyle(
@@ -340,7 +347,7 @@ class _RecordPaymentBottomSheetState extends State<RecordPaymentBottomSheet> {
                 ),
                 const SizedBox(height: 16),
 
-                // 4. رقم المرجع / السند (اختياري)
+                // 4. Reference / receipt number (optional)
                 TextFormField(
                   controller: _referenceController,
                   decoration: const InputDecoration(
@@ -350,7 +357,7 @@ class _RecordPaymentBottomSheetState extends State<RecordPaymentBottomSheet> {
                 ),
                 const SizedBox(height: 12),
 
-                // 5. ملاحظة (اختيارية)
+                // 5. Note (optional)
                 TextFormField(
                   controller: _noteController,
                   maxLines: 2,
@@ -361,7 +368,7 @@ class _RecordPaymentBottomSheetState extends State<RecordPaymentBottomSheet> {
                 ),
                 const SizedBox(height: 24),
 
-                // زر تأكيد وحفظ الدفعة
+                // Confirm and save payment button
                 ElevatedButton.icon(
                   onPressed: _isSubmitting ? null : _handleConfirmPayment,
                   icon: _isSubmitting
@@ -397,7 +404,7 @@ class _RecordPaymentBottomSheetState extends State<RecordPaymentBottomSheet> {
     );
     final remainingBalance = _currentBalance - amountSubunits;
 
-    // تأكيد قبل الحفظ يعرض الرصيد قبل وبعد (Task 5.3.4)
+    // Confirmation before saving showing balance before and after (Task 5.3.4)
     final confirm = await showAppConfirmationDialog(
       context: context,
       title: 'تأكيد تسجيل السداد',

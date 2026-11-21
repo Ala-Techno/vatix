@@ -15,7 +15,7 @@ import '../providers/retailer_statement_provider.dart';
 import '../widgets/reconciliation_dialog.dart';
 import '../widgets/record_payment_bottom_sheet.dart';
 
-/// [RetailerStatementScreen] — شاشة كشف حساب التاجر وقائمة القيود وتسجيل السداد (Task 5.3)
+/// [RetailerStatementScreen] — Retailer statement view, entries list, and record payment (Task 5.3)
 class RetailerStatementScreen extends StatelessWidget {
   final String wholesalerId;
   final String retailerId;
@@ -142,7 +142,7 @@ class _RetailerStatementContentState extends State<_RetailerStatementContent> {
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            // 1. ترويسة الأرصدة القائمة
+            // 1. Current balances header
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -150,7 +150,7 @@ class _RetailerStatementContentState extends State<_RetailerStatementContent> {
               ),
             ),
 
-            // 2. شريط فلترة العملات
+            // 2. Currency filter bar
             SliverToBoxAdapter(
               child: _buildCurrencyFilters(provider),
             ),
@@ -159,10 +159,10 @@ class _RetailerStatementContentState extends State<_RetailerStatementContent> {
               child: SizedBox(height: 8),
             ),
 
-            // 3. محتوى قائمة القيود
+            // 3. Statement entries list content
             _buildStatementBody(provider),
 
-            // مسافة سفلية لحساب الـ FloatingActionButton
+            // Bottom spacing for FloatingActionButton
             const SliverToBoxAdapter(
               child: SizedBox(height: 80),
             ),
@@ -172,7 +172,7 @@ class _RetailerStatementContentState extends State<_RetailerStatementContent> {
     );
   }
 
-  /// ترويسة أرصدة التاجر الحالية لكل عملة (Task 5.3.1)
+  /// Current balances header per currency (Task 5.3.1)
   Widget _buildBalancesHeader(AccountEntity? account) {
     if (account == null) {
       return const ShimmerLoading(
@@ -300,7 +300,7 @@ class _RetailerStatementContentState extends State<_RetailerStatementContent> {
     );
   }
 
-  /// شريط تصفية القيود بالعملة
+  /// Currency filter bar
   Widget _buildCurrencyFilters(RetailerStatementProvider provider) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -365,7 +365,7 @@ class _RetailerStatementContentState extends State<_RetailerStatementContent> {
     );
   }
 
-  /// جسم كشف الحساب
+  /// Statement body
   Widget _buildStatementBody(RetailerStatementProvider provider) {
     if (provider.isLoadingEntries) {
       return SliverToBoxAdapter(
@@ -439,7 +439,7 @@ class _RetailerStatementContentState extends State<_RetailerStatementContent> {
     );
   }
 
-  /// بطاقة قيد الدفتر الواحدة
+  /// Single ledger entry card
   Widget _buildLedgerEntryCard(LedgerEntryEntity entry) {
     final isDebt = entry.type == LedgerEntryType.debt;
     final badgeColor = isDebt ? AppColors.statusPending : AppColors.statusActive;
@@ -461,7 +461,7 @@ class _RetailerStatementContentState extends State<_RetailerStatementContent> {
           children: [
             Row(
               children: [
-                // شارة النوع
+                // Type badge
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -494,7 +494,7 @@ class _RetailerStatementContentState extends State<_RetailerStatementContent> {
                 ),
                 const SizedBox(width: 8),
 
-                // تفاصيل الطريقة إن وجدت
+                // Method details if available
                 if (!isDebt && entry.method != null)
                   Container(
                     padding:
@@ -515,7 +515,7 @@ class _RetailerStatementContentState extends State<_RetailerStatementContent> {
 
                 const Spacer(),
 
-                // المبلغ
+                // Amount
                 Text(
                   '${isDebt ? '+' : '-'}${MoneyFormatter.format(entry.amount, entry.currency)}',
                   style: TextStyle(
@@ -529,7 +529,7 @@ class _RetailerStatementContentState extends State<_RetailerStatementContent> {
             ),
             const SizedBox(height: 10),
 
-            // معلومات إضافية
+            // Additional details
             if (isDebt && entry.orderId.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
@@ -573,7 +573,7 @@ class _RetailerStatementContentState extends State<_RetailerStatementContent> {
                 ),
               ),
 
-            // التاريخ
+            // Date
             Text(
               dateFormat.format(entry.createdAt),
               style: const TextStyle(

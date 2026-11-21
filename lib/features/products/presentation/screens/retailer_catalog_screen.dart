@@ -8,8 +8,8 @@ import 'package:vatix/features/auth/presentation/providers/auth_provider.dart';
 import '../providers/retailer_catalog_provider.dart';
 import '../widgets/retailer_product_card.dart';
 
-/// [RetailerCatalogScreen] — شاشة كتالوج الأصناف لتاجر التجزئة
-/// تدعم: البحث المحلي، شرائح التصنيفات، التبديل بين الشبكة والقائمة، السحب للتحديث، والـ Pagination
+/// [RetailerCatalogScreen] — Product catalog screen for retailer
+/// Supports: local search, category chips, grid/list toggle, pull-to-refresh, and pagination
 class RetailerCatalogScreen extends StatefulWidget {
   const RetailerCatalogScreen({super.key});
 
@@ -74,7 +74,7 @@ class _RetailerCatalogScreenState extends State<RetailerCatalogScreen> {
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          // ── شريط البحث والتصفية وزر تبديل العرض ─────────────────────
+          // ── Search & filter bar and layout toggle button ─────────────────
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             color: AppColors.surface,
@@ -101,7 +101,7 @@ class _RetailerCatalogScreenState extends State<RetailerCatalogScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // زر التبديل بين القائمة والشبكة
+                // Toggle button between list and grid
                 Container(
                   width: 46,
                   height: 46,
@@ -126,7 +126,7 @@ class _RetailerCatalogScreenState extends State<RetailerCatalogScreen> {
             ),
           ),
 
-          // ── شرائح التصنيفات الأفقية (Categories) ────────────────────
+          // ── Horizontal category chips (Categories) ────────────────────
           if (provider.categories.isNotEmpty)
             Container(
               height: 44,
@@ -156,7 +156,7 @@ class _RetailerCatalogScreenState extends State<RetailerCatalogScreen> {
               ),
             ),
 
-          // ── المحتوى الرئيسي ─────────────────────────────────────────
+          // ── Main content ─────────────────────────────────────────────
           Expanded(
             child: RefreshIndicator(
               onRefresh: _handleRefresh,
@@ -207,7 +207,7 @@ class _RetailerCatalogScreenState extends State<RetailerCatalogScreen> {
       );
     }
 
-    // عرض الشبكة (Grid View)
+    // Grid View
     if (provider.isGridView) {
       return GridView.builder(
         controller: _scrollController,
@@ -240,7 +240,7 @@ class _RetailerCatalogScreenState extends State<RetailerCatalogScreen> {
       );
     }
 
-    // عرض القائمة (List View)
+    // List View
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -280,19 +280,20 @@ class _RetailerCatalogScreenState extends State<RetailerCatalogScreen> {
         style: TextStyle(
           fontFamily: 'Cairo',
           fontSize: 12,
-          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-          color: isSelected ? Colors.white : AppColors.textSecondary,
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+          color: isSelected ? Colors.white : AppColors.textPrimary,
         ),
       ),
       selected: isSelected,
       selectedColor: AppColors.primary,
-      backgroundColor: AppColors.surfaceVariant,
+      backgroundColor: const Color(0xFFF1F5F9),
       onSelected: (_) => onTap(),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
       ),
       side: BorderSide(
-        color: isSelected ? AppColors.primary : AppColors.borderSubtle,
+        color: isSelected ? AppColors.primary : const Color(0xFFCBD5E1),
+        width: 1,
       ),
     );
   }

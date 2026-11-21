@@ -5,8 +5,8 @@ import 'package:vatix/core/errors/failures.dart';
 
 import 'exceptions.dart';
 
-/// يحوّل أي خطأ (Firebase / تطبيق) إلى [Failure] برسالة عربية مناسبة للمستخدم.
-/// لا يُسرّب نصوصاً تقنية للمستخدم؛ التفاصيل تُطبع في وضع التطوير فقط.
+/// Converts any error (Firebase / app) into a [Failure] with an appropriate Arabic user message.
+/// Does not leak technical details to the user; details are printed in debug mode only.
 class ApiErrorHandler {
   const ApiErrorHandler._();
 
@@ -22,7 +22,7 @@ class ApiErrorHandler {
     if (error is CacheException) {
       return CacheFailure(error.message ?? 'حدث خطأ في الذاكرة المؤقتة');
     }
-    // FirebaseAuthException يرث FirebaseException => يُفحص أولاً.
+    // FirebaseAuthException extends FirebaseException => must be checked first.
     if (error is FirebaseAuthException) return _fromAuth(error);
     if (error is FirebaseException) return _fromFirebase(error);
     if (error is FormatException) {

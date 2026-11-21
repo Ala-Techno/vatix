@@ -9,7 +9,7 @@ import '../../domain/repositories/ledger_repository.dart';
 import '../../domain/usecases/reconcile_ledger_use_case.dart';
 import '../datasources/ledger_remote_data_source.dart';
 
-/// [LedgerRepositoryImpl] — تنفيذ مستودع دفتر الأستاذ والأرصدة مع معالجة الأخطاء
+/// [LedgerRepositoryImpl] — Implementation of ledger and balances repository with error handling
 class LedgerRepositoryImpl implements LedgerRepository {
   final LedgerRemoteDataSource _remoteDataSource;
 

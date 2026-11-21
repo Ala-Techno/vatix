@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/image_upload_service.dart';
 import '../services/shared_pref_service.dart';
 
 // --- Auth Feature ---
@@ -53,12 +54,15 @@ import '../../features/ledger/presentation/providers/wholesaler_ledger_provider.
 
 final getIt = GetIt.instance;
 
-/// تسجيلات الحقن لـ Vatix (Feature-First)
+/// Dependency injection registrations for Vatix (Feature-First)
 Future<void> setupGetIt() async {
-  // ── 1. Local storage ─────────────────────────────────────────────────────
+  // ── 1. Local storage & Services ──────────────────────────────────────────
   final sharedPreferences = await SharedPreferences.getInstance();
   getIt.registerLazySingleton<SharedPrefService>(
     () => SharedPrefService(sharedPreferences),
+  );
+  getIt.registerLazySingleton<ImageUploadService>(
+    () => ImageUploadService(),
   );
 
   // ── 2. Firebase instances ────────────────────────────────────────────────
@@ -96,7 +100,7 @@ Future<void> setupGetIt() async {
     () => ResetPasswordUseCase(getIt<AuthRepository>()),
   );
 
-  // ── 6. AuthProvider — Singleton (في جذر التطبيق) ─────────────────────────
+  // ── 6. AuthProvider — Singleton (at app root) ─────────────────────────
   getIt.registerLazySingleton<AuthProvider>(
     () => AuthProvider(
       authRepository: getIt<AuthRepository>(),

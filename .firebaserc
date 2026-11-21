@@ -1,6 +1,15 @@
 {
   "projects": {
     "default": "vatix-7c491"
-  }
+  },
+  "targets": {
+    "vatix-7c491": {
+      "storage": {
+        "default": [
+          "vatix-7c491.firebasestorage.app"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
-

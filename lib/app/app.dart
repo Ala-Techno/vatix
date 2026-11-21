@@ -18,15 +18,15 @@ class VatixApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // AuthProvider واحد في الجذر — مصدر الحقيقة للجلسة والدور
+        // Single AuthProvider at root — source of truth for session and role
         ChangeNotifierProvider<AuthProvider>(
           create: (_) => getIt<AuthProvider>(),
         ),
-        // CartProvider في الجذر — سلة المشتريات متاحة عبر كامل مسارات التطبيق
+        // CartProvider at root — shopping cart available across all app routes
         ChangeNotifierProvider<CartProvider>(
           create: (_) => getIt<CartProvider>(),
         ),
-        // RetailerOrdersProvider في الجذر — قائمة طلبات التاجر والتحديثات اللحظية
+        // RetailerOrdersProvider at root — retailer orders list and real-time updates
         ChangeNotifierProvider<RetailerOrdersProvider>(
           create: (_) => getIt<RetailerOrdersProvider>(),
         ),

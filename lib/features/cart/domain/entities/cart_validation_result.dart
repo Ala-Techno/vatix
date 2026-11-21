@@ -2,19 +2,19 @@ import 'package:vatix/core/utils/currency.dart';
 import 'package:vatix/core/utils/money_formatter.dart';
 import 'cart_item_entity.dart';
 
-/// نوع التغيير أو الفارق المكتشف في سلة المشتريات
+/// Discrepancy type detected in shopping cart items prior to checkout
 enum DiscrepancyType {
-  /// المنتج غير متاح حالياً للطلب أو تم تعطيله/حذفه من قبل المورد
+  /// Product is unavailable or deactivated/deleted by wholesaler
   unavailableOrRemoved,
 
-  /// تغير سعر الوحدة للمنتج
+  /// Product unit price changed
   priceChanged,
 
-  /// تغير عملة البيع للمنتج
+  /// Product sales currency changed
   currencyChanged,
 }
 
-/// تفاصيل الفارق لصنف محدد في السلة
+/// Discrepancy details for a specific item in cart
 class CartItemDiscrepancy {
   final String productId;
   final String productName;
@@ -36,7 +36,7 @@ class CartItemDiscrepancy {
     this.newCurrency,
   });
 
-  /// إنشاء فارغ عدم توفر
+  /// Factory for unavailable product discrepancy
   factory CartItemDiscrepancy.unavailable({
     required String productId,
     required String productName,
@@ -49,7 +49,7 @@ class CartItemDiscrepancy {
     );
   }
 
-  /// إنشاء فارغ تغير السعر
+  /// Factory for price change discrepancy
   factory CartItemDiscrepancy.priceChanged({
     required String productId,
     required String productName,
@@ -72,7 +72,7 @@ class CartItemDiscrepancy {
     );
   }
 
-  /// إنشاء فارغ تغير العملة
+  /// Factory for currency change discrepancy
   factory CartItemDiscrepancy.currencyChanged({
     required String productId,
     required String productName,
@@ -97,7 +97,7 @@ class CartItemDiscrepancy {
   }
 }
 
-/// [CartValidationResult] — نتيجة إعادة التحقق من السلة قبل إرسال أمر الشراء
+/// [CartValidationResult] — Result of re-validating cart items prior to placing order
 class CartValidationResult {
   final bool isValid;
   final List<CartItemDiscrepancy> discrepancies;
@@ -111,7 +111,7 @@ class CartValidationResult {
     required this.updatedItems,
   });
 
-  /// نتيجة تطابق تام ولا توجد أي فروقات
+  /// Clean validation result with zero discrepancies
   factory CartValidationResult.clean() {
     return const CartValidationResult(
       isValid: true,

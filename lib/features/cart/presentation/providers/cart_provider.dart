@@ -6,8 +6,8 @@ import 'package:vatix/features/cart/domain/entities/cart_validation_result.dart'
 import 'package:vatix/features/products/domain/entities/product_entity.dart';
 import 'package:vatix/features/products/domain/repositories/products_repository.dart';
 
-/// [CartProvider] — إدارة حالة سلة المشتريات المحلية في الذاكرة لتاجر التجزئة
-/// تدعم: العملات المتعددة، قفل المورد الواحد، إعادة التحقق اللحظي قبل إرسال الطلب
+/// [CartProvider] — In-memory cart state management for retailer.
+/// Supports: multi-currency, single-wholesaler locking, real-time re-validation before checkout.
 class CartProvider extends ChangeNotifier {
   final Map<String, CartItemEntity> _items = {};
   String? _currentWholesalerId;
@@ -15,29 +15,29 @@ class CartProvider extends ChangeNotifier {
 
   // ── Getters ────────────────────────────────────────────────────────────────
 
-  /// قائمة العناصر الحالية بالسلة
+  /// Current cart items list.
   List<CartItemEntity> get items => _items.values.toList();
 
-  /// إجمالي عدد القطع بالسلة (مجموع الكميات)
+  /// Total count of pieces in cart (sum of quantities).
   int get itemCount => _items.values.fold(0, (sum, item) => sum + item.quantity);
 
-  /// عدد الأصناف الفريدة بالسلة
+  /// Count of unique items in cart.
   int get uniqueItemCount => _items.length;
 
-  /// هل السلة فارغة
+  /// Whether the cart is empty.
   bool get isEmpty => _items.isEmpty;
 
-  /// هل السلة تحوي عناصر
+  /// Whether the cart has items.
   bool get isNotEmpty => _items.isNotEmpty;
 
-  /// معرف المورد المقفلة عليه السلة الحالية
+  /// Wholesaler ID to which the current cart is locked.
   String? get currentWholesalerId => _currentWholesalerId;
 
-  /// هل عملية إعادة التحقق جارية
+  /// Whether re-validation is in progress.
   bool get isValidating => _isValidating;
 
-  /// حساب إجمالي السلة مجمّعاً حسب كل عملة (Subunits)
-  /// مثال: {Currency.yer: 45000, Currency.sar: 1200}
+  /// Calculates cart total grouped by currency (Subunits).
+  /// Example: {Currency.yer: 45000, Currency.sar: 1200}
   Map<Currency, int> get totalsByCurrency {
     final totals = <Currency, int>{};
     for (final item in _items.values) {
@@ -46,29 +46,29 @@ class CartProvider extends ChangeNotifier {
     return totals;
   }
 
-  /// التحقق إن كان منتج معين موجوداً في السلة
+  /// Checks whether a given product exists in the cart.
   bool isInCart(String productId) => _items.containsKey(productId);
 
-  /// الحصول على كمية منتج معين في السلة
+  /// Gets the quantity of a given product in the cart.
   int getQuantity(String productId) => _items[productId]?.quantity ?? 0;
 
-  // ── العمليات الأساسية (Cart Operations) ──────────────────────────────────────
+  // ── Cart Operations ────────────────────────────────────────────────────────
 
-  /// إضافة صنف للسلة أو زيادة كميته إن كان موجوداً مسبقاً
-  /// تعيد [String?] يحوي رسالة الخطأ في حال الفشل، أو null عند النجاح
+  /// Adds an item to the cart or increments its quantity if already present.
+  /// Returns [String?] containing error message on failure, or null on success.
   String? addItem(ProductEntity product, {int quantity = 1}) {
-    // 1. التحقق من توفر ونشاط المنتج
+    // 1. Validate product availability and active status
     if (!product.isActive || !product.isAvailable) {
       return 'عذراً، هذا الصنف غير متاح للطلب حالياً لدى المورد.';
     }
 
-    // 2. التحقق من قفل المورد (M3 §3.1.4: لا خلط بين شركات مختلفة)
+    // 2. Validate single wholesaler locking (M3 §3.1.4: no mixing between different companies)
     if (_currentWholesalerId != null &&
         _currentWholesalerId != product.wholesalerId) {
       return 'لا يمكن خلط أصناف من موردين مختلفين في نفس السلة. تفريغ السلة مطلوب أولاً.';
     }
 
-    // تعيين المورد إن كانت السلة فارغة
+    // Assign wholesaler if cart was empty
     _currentWholesalerId = product.wholesalerId;
 
     final existing = _items[product.id];
@@ -92,7 +92,7 @@ class CartProvider extends ChangeNotifier {
     return null;
   }
 
-  /// زيادة كمية صنف بواحد
+  /// Increments item quantity by one.
   void increment(String productId) {
     final existing = _items[productId];
     if (existing == null) return;
@@ -102,7 +102,7 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// إنقاص كمية صنف بواحد (وإزالته إذا وصلت للصفر)
+  /// Decrements item quantity by one (removes item if quantity reaches zero).
   void decrement(String productId) {
     final existing = _items[productId];
     if (existing == null) return;
@@ -115,7 +115,7 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
-  /// تعيين كمية محددة لصنف مباشرة
+  /// Sets specific quantity for an item directly.
   void updateQuantity(String productId, int newQuantity) {
     if (newQuantity <= 0) {
       removeItem(productId);
@@ -129,7 +129,7 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// حذف صنف من السلة
+  /// Removes an item from the cart.
   void removeItem(String productId) {
     final removed = _items.remove(productId);
     if (removed != null) {
@@ -140,16 +140,16 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
-  /// تفريغ السلة بالكامل
+  /// Clears the entire cart.
   void clear() {
     _items.clear();
     _currentWholesalerId = null;
     notifyListeners();
   }
 
-  // ── إعادة التحقق قبل الإرسال (Task 3.2: Pre-checkout Re-validation) ──────────
+  // ── Pre-checkout Re-validation (Task 3.2) ───────────────────────────────────
 
-  /// التحقق من صلاحية وأسعار وتوفر جميع أصناف السلة حديثاً من Firestore
+  /// Fresh validation of validity, prices, and availability of all cart items against Firestore.
   Future<CartValidationResult> validateCart(ProductsRepository repository) async {
     if (_items.isEmpty) {
       return CartValidationResult.clean();
@@ -173,7 +173,7 @@ class CartProvider extends ChangeNotifier {
 
         if (result is ApiFailure) {
           final failure = (result as ApiFailure).failure;
-          // المنتج محذوف فعلياً من قاعدة البيانات
+          // Product actually deleted from database
           final isNotFound = failure.message.contains('غير موجود') ||
               failure.message.contains('not-found');
           if (isNotFound) {
@@ -186,13 +186,13 @@ class CartProvider extends ChangeNotifier {
             removedIds.add(productId);
             _items.remove(productId);
           }
-          // في حال عدم توفر اتصال بالشبكة (Offline E3) نحافظ على عناصر السلة ونتابع
+          // On network loss (Offline E3), keep cart items and continue
           continue;
         }
 
         final freshProduct = (result as Success<ProductEntity>).data;
 
-        // 1. فحص التوفر والنشاط
+        // 1. Check availability and active status
         if (!freshProduct.isActive || !freshProduct.isAvailable) {
           discrepancies.add(
             CartItemDiscrepancy.unavailable(
@@ -205,7 +205,7 @@ class CartProvider extends ChangeNotifier {
           continue;
         }
 
-        // 2. فحص تغير العملة
+        // 2. Check currency change
         if (freshProduct.currency != cartItem.currency) {
           discrepancies.add(
             CartItemDiscrepancy.currencyChanged(
@@ -231,7 +231,7 @@ class CartProvider extends ChangeNotifier {
           continue;
         }
 
-        // 3. فحص تغير السعر
+        // 3. Check price change
         if (freshProduct.price != cartItem.unitPrice) {
           discrepancies.add(
             CartItemDiscrepancy.priceChanged(
@@ -255,7 +255,7 @@ class CartProvider extends ChangeNotifier {
           continue;
         }
 
-        // 4. تحديث أي تفاصيل نصية طفيفة (الاسم أو الوحدة أو الصورة)
+        // 4. Update minor text details (name, unit, image, SKU)
         final updated = cartItem.copyWith(
           name: freshProduct.name,
           unit: freshProduct.unit,

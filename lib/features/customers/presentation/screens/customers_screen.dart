@@ -9,8 +9,8 @@ import '../providers/customers_provider.dart';
 import '../widgets/customer_card.dart';
 import '../widgets/invite_code_card.dart';
 
-/// [CustomersScreen] — شاشة إدارة العملاء (التجار) وأكواد الدعوة للمورد
-/// مصممة بمساحات مريحة وبدون أي RenderFlex overflow
+/// [CustomersScreen] — Customers (retailers) and invite codes management screen for wholesalers.
+/// Designed with comfortable spacing without RenderFlex overflow.
 class CustomersScreen extends StatefulWidget {
   const CustomersScreen({super.key});
 

@@ -1,11 +1,11 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:vatix/core/theme/app_colors.dart';
+import 'package:vatix/core/widgets/vatix_product_image.dart';
 import '../../domain/entities/product_entity.dart';
 import 'product_details_bottom_sheet.dart';
 
-/// [RetailerProductCard] — بطاقة الصنف في كتالوج التاجر
-/// متكيفة من parked/product_card.dart بدون تقييمات أو مفضلة، مع دعم الوحدة، السعر المالي المنسق، والتوفر
+/// [RetailerProductCard] — Retailer catalog product card widget
+/// Adapted for unit support, formatted financial price, and availability status
 class RetailerProductCard extends StatelessWidget {
   final ProductEntity product;
   final bool isGrid;
@@ -24,7 +24,7 @@ class RetailerProductCard extends StatelessWidget {
     return _buildListCard(context);
   }
 
-  // ── بطاقة العرض الأفقي (List View) ──────────────────────────────────────────
+  // ── Horizontal list card (List View) ─────────────────────────────────────────
   Widget _buildListCard(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
@@ -49,11 +49,11 @@ class RetailerProductCard extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                // مربع الصورة
+                // Image box
                 _buildProductImage(width: 58, height: 58, radius: 12),
                 const SizedBox(width: 12),
 
-                // بيانات الصنف
+                // Product details
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,7 +111,7 @@ class RetailerProductCard extends StatelessWidget {
 
                 const SizedBox(width: 8),
 
-                // شارة التوفر وأيقونة السهم
+                // Availability badge and arrow icon
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -154,7 +154,7 @@ class RetailerProductCard extends StatelessWidget {
     );
   }
 
-  // ── بطاقة العرض الشبكي (Grid View) ──────────────────────────────────────────
+  // ── Grid card (Grid View) ─────────────────────────────────────────────────
   Widget _buildGridCard(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
@@ -177,7 +177,7 @@ class RetailerProductCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // صورة الصنف في رأس البطاقة
+              // Product image on top of card
               Expanded(
                 flex: 5,
                 child: ClipRRect(
@@ -195,7 +195,7 @@ class RetailerProductCard extends StatelessWidget {
                             radius: 0,
                           ),
                         ),
-                        // شارة التوفر في الزاوية
+                        // Corner availability and stock badge
                         Positioned(
                           top: 8,
                           left: 8,
@@ -205,13 +205,15 @@ class RetailerProductCard extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: product.isAvailable
+                              color: (product.isAvailable && (product.stockQuantity == null || product.stockQuantity! > 0))
                                   ? AppColors.statusActive
                                   : AppColors.statusBlocked,
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              product.isAvailable ? 'متاح' : 'معطّل',
+                              (product.isAvailable && (product.stockQuantity == null || product.stockQuantity! > 0))
+                                  ? (product.stockQuantity != null ? 'متاح (${product.stockQuantity})' : 'متاح')
+                                  : (product.stockQuantity != null && product.stockQuantity! <= 0 ? 'نفذ' : 'معطّل'),
                               style: const TextStyle(
                                 fontSize: 9.5,
                                 color: Colors.white,
@@ -227,7 +229,7 @@ class RetailerProductCard extends StatelessWidget {
                 ),
               ),
 
-              // بيانات الصنف والسعر
+              // Product details and price
               Expanded(
                 flex: 4,
                 child: Padding(
@@ -280,45 +282,13 @@ class RetailerProductCard extends StatelessWidget {
     required double height,
     required double radius,
   }) {
-    if (product.imageUrl != null && product.imageUrl!.trim().isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
-        child: CachedNetworkImage(
-          imageUrl: product.imageUrl!,
-          width: width,
-          height: height,
-          fit: BoxFit.contain,
-          placeholder: (_, __) => const Center(
-            child: SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ),
-          errorWidget: (_, __, ___) => _buildFallbackIcon(width, height, radius),
-        ),
-      );
-    }
-    return _buildFallbackIcon(width, height, radius);
-  }
-
-  Widget _buildFallbackIcon(double width, double height, double radius) {
-    return Container(
+    return VatixProductImage(
+      imageUrl: product.imageUrl,
       width: width,
       height: height,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
-        borderRadius: BorderRadius.circular(radius),
-      ),
-      child: Center(
-        child: Icon(
-          Icons.inventory_2_rounded,
-          size: 26,
-          color: product.isAvailable
-              ? AppColors.primaryLight
-              : AppColors.textHint,
-        ),
-      ),
+      radius: radius,
+      fit: BoxFit.cover,
+      isAvailable: product.isAvailable,
     );
   }
 

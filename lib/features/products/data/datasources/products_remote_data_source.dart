@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:vatix/core/utils/currency.dart';
 import '../models/product_model.dart';
 
-/// نتيجة استعلام صفحة المنتجات من DataSource
+/// Product page query result from DataSource
 class ProductsPageData {
   final List<ProductModel> products;
   final DocumentSnapshot<Map<String, dynamic>>? lastDocument;
@@ -57,6 +57,12 @@ abstract class ProductsRemoteDataSource {
     required String wholesalerId,
     int limit = 20,
     DocumentSnapshot<Map<String, dynamic>>? startAfterDocument,
+    bool activeOnly = true,
+  });
+
+  /// Real-time stream of wholesaler products for instant updates without manual refresh
+  Stream<List<ProductModel>> watchWholesalerProducts({
+    required String wholesalerId,
     bool activeOnly = true,
   });
 
@@ -205,6 +211,26 @@ class ProductsRemoteDataSourceImpl implements ProductsRemoteDataSource {
       lastDocument: lastDoc,
       hasMore: hasMore,
     );
+  }
+
+  @override
+  Stream<List<ProductModel>> watchWholesalerProducts({
+    required String wholesalerId,
+    bool activeOnly = true,
+  }) {
+    Query<Map<String, dynamic>> query = _productsRef
+        .where('wholesalerId', isEqualTo: wholesalerId);
+
+    if (activeOnly) {
+      query = query.where('isActive', isEqualTo: true);
+    }
+
+    return query
+        .orderBy('name')
+        .snapshots(includeMetadataChanges: true)
+        .map((snapshot) => snapshot.docs
+            .map((doc) => ProductModel.fromFirestore(doc))
+            .toList());
   }
 
   @override

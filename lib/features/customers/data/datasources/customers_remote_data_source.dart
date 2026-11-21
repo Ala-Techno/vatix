@@ -30,7 +30,7 @@ class CustomersRemoteDataSourceImpl implements CustomersRemoteDataSource {
   CustomersRemoteDataSourceImpl({required FirebaseFirestore firestore})
       : _firestore = firestore;
 
-  // الحروف والأرقام غير القابلة للالتباس (بدون O, 0, I, 1) حسب البند 1.3.3
+  // Unambiguous characters and digits (excluding O, 0, I, 1) per clause 1.3.3
   static const String _allowedChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
   @override
@@ -48,24 +48,64 @@ class CustomersRemoteDataSourceImpl implements CustomersRemoteDataSource {
             .toList());
   }
 
-  @override
+ @override
   Future<void> setCustomerStatus({
     required String customerId,
     required String status,
   }) async {
     try {
-      // الالتزام التام بقاعدة الحماية (تحديث status و updatedAt فقط)
-      await _firestore.collection('users').doc(customerId).update({
+      final batch = _firestore.batch();
+
+      // 1. Customer document reference
+      final userRef = _firestore.collection('users').doc(customerId);
+
+      // 2. Update primary user status
+      batch.update(userRef, {
         'status': status,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      // 3. If customer becomes active, proactively create the account document
+      if (status == 'active') {
+        // Read current user data to fetch wholesalerId and customer name
+        final userDoc = await userRef.get();
+        if (userDoc.exists) {
+          final userData = userDoc.data();
+          final wholesalerId = userData?['wholesalerId'];
+          final customerName = userData?['businessName'] ?? userData?['ownerName'] ?? 'تاجر';
+
+          if (wholesalerId != null) {
+            final accountId = '${wholesalerId}_$customerId';
+            final accountRef = _firestore.collection('accounts').doc(accountId);
+
+            batch.set(
+              accountRef,
+              {
+                'wholesalerId': wholesalerId,
+                'retailerId': customerId,
+                'retailerName': customerName,
+                'balances': {
+                  'YER': 0,
+                  'SAR': 0,
+                  'USD': 0,
+                },
+                'createdAt': FieldValue.serverTimestamp(),
+                'updatedAt': FieldValue.serverTimestamp(),
+              },
+              SetOptions(merge: true),
+            );
+          }
+        }
+      }
+
+      await batch.commit();
     } on FirebaseException catch (e) {
       throw ServerException(message: e.message ?? 'فشل تحديث حالة العميل');
     } catch (e) {
+      if (e is ServerException) rethrow;
       throw ServerException(message: e.toString());
     }
   }
-
   @override
   Stream<InviteCodeModel?> watchActiveInvite({
     required String wholesalerId,
@@ -86,7 +126,7 @@ class CustomersRemoteDataSourceImpl implements CustomersRemoteDataSource {
     required String wholesalerId,
   }) async {
     try {
-      // 1. توليد كود جديد فريد من 8 رموز والتأكد من عدم وجوده مسبقاً
+      // 1. Generate a new unique 8-character code and verify it does not already exist
       String newCode = '';
       bool exists = true;
       int attempts = 0;
@@ -103,7 +143,7 @@ class CustomersRemoteDataSourceImpl implements CustomersRemoteDataSource {
         throw const ServerException(message: 'فشل توليد كود دعوة فريد، حاول ثانية');
       }
 
-      // 2. تدوير الكود عبر WriteBatch: تعطيل الأكواد القديمة + إنشاء الكود الجديد
+      // 2. Rotate code via WriteBatch: deactivate old codes and create new code
       final batch = _firestore.batch();
 
       final currentInvites = await _firestore

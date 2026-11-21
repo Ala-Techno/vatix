@@ -4,7 +4,7 @@ import 'package:vatix/core/utils/currency.dart';
 import '../../domain/entities/account_entity.dart';
 import '../../domain/repositories/ledger_repository.dart';
 
-/// [LedgerFilterMode] — نوع فلترة قائمة الحسابات
+/// [LedgerFilterMode] — Account list filtering mode
 enum LedgerFilterMode {
   all('الكل'),
   withDebt('عليهم ديون'),
@@ -14,7 +14,7 @@ enum LedgerFilterMode {
   const LedgerFilterMode(this.label);
 }
 
-/// [WholesalerLedgerProvider] — إدارة حالة دفتر ديون وحسابات المورد (Task 5.2)
+/// [WholesalerLedgerProvider] — State management for wholesaler debts and accounts ledger (Task 5.2)
 class WholesalerLedgerProvider extends ChangeNotifier {
   final LedgerRepository _repository;
 
@@ -39,19 +39,19 @@ class WholesalerLedgerProvider extends ChangeNotifier {
   String get searchQuery => _searchQuery;
   LedgerFilterMode get filterMode => _filterMode;
 
-  /// الحسابات المفلترة حسب البحث ونوع الفلترة، مرتبة حسب الأعلى ديناً
+  /// Filtered accounts according to search query and mode, sorted by highest debt
   List<AccountEntity> get filteredAccounts {
     final query = _searchQuery.trim().toLowerCase();
 
     final filtered = _accounts.where((account) {
-      // 1. فلتر البحث بالاسم
+      // 1. Search by name
       if (query.isNotEmpty) {
         final matchesName =
             account.retailerName.toLowerCase().contains(query);
         if (!matchesName) return false;
       }
 
-      // 2. فلتر حالة الدين
+      // 2. Debt status filter
       switch (_filterMode) {
         case LedgerFilterMode.all:
           return true;
@@ -62,14 +62,14 @@ class WholesalerLedgerProvider extends ChangeNotifier {
       }
     }).toList();
 
-    // 3. الترتيب: الأعلى ديناً أولاً (حساب مجموع الرصيد الإيجابي)
+    // 3. Sorting: highest debt first (comparing positive debt balance sums)
     filtered.sort((a, b) {
       final aHasDebt = a.hasDebt;
       final bHasDebt = b.hasDebt;
       if (aHasDebt && !bHasDebt) return -1;
       if (!aHasDebt && bHasDebt) return 1;
 
-      // مقارنة مجموع الديون
+      // Compare total debt amounts
       final sumA = a.balances.values.fold<int>(0, (prev, val) => prev + (val > 0 ? val : 0));
       final sumB = b.balances.values.fold<int>(0, (prev, val) => prev + (val > 0 ? val : 0));
       return sumB.compareTo(sumA);
@@ -78,7 +78,7 @@ class WholesalerLedgerProvider extends ChangeNotifier {
     return filtered;
   }
 
-  /// إجمالي الذمم والديون المستحقة لكل عملة (Task 5.2.3)
+  /// Total receivables and outstanding debt per currency (Task 5.2.3)
   Map<Currency, int> get totalReceivables {
     final Map<Currency, int> totals = {
       Currency.yer: 0,
@@ -97,13 +97,13 @@ class WholesalerLedgerProvider extends ChangeNotifier {
     return totals;
   }
 
-  /// هل يوجد أي دين مستحق بأي عملة؟
+  /// Whether there is any outstanding debt across any currency
   bool get hasAnyReceivables =>
       totalReceivables.values.any((amount) => amount > 0);
 
   // ─── Methods ─────────────────────────────────────────────────────────────
 
-  /// بدء الاستماع الحي للحسابات عند فتح الشاشة
+  /// Start real-time listening to accounts when screen opens
   void init(String wholesalerId) {
     if (_currentWholesalerId == wholesalerId && _accountsSub != null) return;
     _currentWholesalerId = wholesalerId;
@@ -130,7 +130,7 @@ class WholesalerLedgerProvider extends ChangeNotifier {
     );
   }
 
-  /// تعيين نص البحث
+  /// Update search query
   void setSearchQuery(String query) {
     if (_searchQuery != query) {
       _searchQuery = query;
@@ -138,7 +138,7 @@ class WholesalerLedgerProvider extends ChangeNotifier {
     }
   }
 
-  /// تغيير فلتر الحسابات
+  /// Change accounts filter mode
   void setFilterMode(LedgerFilterMode mode) {
     if (_filterMode != mode) {
       _filterMode = mode;
@@ -146,7 +146,7 @@ class WholesalerLedgerProvider extends ChangeNotifier {
     }
   }
 
-  /// إعادة المحاولة عند حدوث خطأ
+  /// Retry upon error
   void retry() {
     if (_currentWholesalerId != null) {
       final wid = _currentWholesalerId!;
@@ -161,4 +161,3 @@ class WholesalerLedgerProvider extends ChangeNotifier {
     super.dispose();
   }
 }
-

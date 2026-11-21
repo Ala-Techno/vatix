@@ -3,10 +3,10 @@ import 'package:vatix/core/theme/app_colors.dart';
 import 'package:vatix/core/utils/money_formatter.dart';
 import '../../domain/entities/order_entity.dart';
 
-/// [OrderApprovalBottomSheet] — نافذة منبثقة لاعتماد أمر الشراء (Task 4.4)
-/// تتيح للمورد اختيار:
-/// 1. آجل (دين) — يُسجَّل دين على التاجر
-/// 2. نقد (كاش) — يُسجَّل دين وسداد معاً ولا يتغير الرصيد
+/// [OrderApprovalBottomSheet] — Modal bottom sheet for approving a purchase order (Task 4.4)
+/// Allows the wholesaler to choose:
+/// 1. Credit (deferred) — registers a debt against the retailer
+/// 2. Cash — registers both a debt and an immediate payment, leaving the balance unchanged
 class OrderApprovalBottomSheet extends StatefulWidget {
   final OrderEntity order;
   final Future<void> Function(PaymentType paymentType) onConfirm;
@@ -39,11 +39,11 @@ class OrderApprovalBottomSheet extends StatefulWidget {
 }
 
 class _OrderApprovalBottomSheetState extends State<OrderApprovalBottomSheet> {
-  PaymentType _selectedType = PaymentType.credit; // الافتراضي آجل (دين)
+  PaymentType _selectedType = PaymentType.credit; // default: credit (deferred)
   bool _isSubmitting = false;
 
   Future<void> _handleConfirm() async {
-    if (_isSubmitting) return; // حارس الضغط المزدوج
+    if (_isSubmitting) return; // guard against double-tap
 
     setState(() => _isSubmitting = true);
     try {
@@ -76,7 +76,7 @@ class _OrderApprovalBottomSheetState extends State<OrderApprovalBottomSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // مقبض السحب
+          // Drag handle
           Center(
             child: Container(
               width: 44,
@@ -89,7 +89,7 @@ class _OrderApprovalBottomSheetState extends State<OrderApprovalBottomSheet> {
           ),
           const SizedBox(height: 16),
 
-          // العنوان
+          // Header title
           Row(
             children: [
               Container(
@@ -135,7 +135,7 @@ class _OrderApprovalBottomSheetState extends State<OrderApprovalBottomSheet> {
           const Divider(height: 1),
           const SizedBox(height: 16),
 
-          // ملخص إجماليات الطلب لكل عملة (Task 4.4.2)
+          // Order totals summary per currency (Task 4.4.2)
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -197,7 +197,7 @@ class _OrderApprovalBottomSheetState extends State<OrderApprovalBottomSheet> {
           ),
           const SizedBox(height: 10),
 
-          // خيار 1: آجل (دين) — Task 4.4.1
+          // Option 1: Credit (deferred) — Task 4.4.1
           _buildPaymentOption(
             type: PaymentType.credit,
             title: 'آجل (دين)',
@@ -208,7 +208,7 @@ class _OrderApprovalBottomSheetState extends State<OrderApprovalBottomSheet> {
 
           const SizedBox(height: 10),
 
-          // خيار 2: نقد (كاش) — Task 4.4.1
+          // Option 2: Cash — Task 4.4.1
           _buildPaymentOption(
             type: PaymentType.cash,
             title: 'نقد (كاش)',
@@ -219,7 +219,7 @@ class _OrderApprovalBottomSheetState extends State<OrderApprovalBottomSheet> {
 
           const SizedBox(height: 24),
 
-          // زر التأكيد مع حارس الضغط المزدوج (Task 4.4.3)
+          // Confirm button with double-tap guard (Task 4.4.3)
           SizedBox(
             width: double.infinity,
             height: 50,

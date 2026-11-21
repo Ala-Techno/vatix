@@ -3,8 +3,8 @@ import 'package:vatix/core/errors/api_result.dart';
 import '../../domain/entities/product_entity.dart';
 import '../../domain/repositories/products_repository.dart';
 
-/// [RetailerCatalogProvider] — إدارة حالة كتالوج المنتجات المعروضة للتاجر
-/// يعتمد على get() فقط (بدون Stream) مع دعم السحب للتحديث والـ Pagination
+/// [RetailerCatalogProvider] — State management for catalog products shown to retailer
+/// Relies on get() only (without Stream) with pull-to-refresh and pagination support
 class RetailerCatalogProvider extends ChangeNotifier {
   final ProductsRepository _repository;
 
@@ -21,7 +21,7 @@ class RetailerCatalogProvider extends ChangeNotifier {
 
   String _searchQuery = '';
   String? _selectedCategory;
-  bool _isGridView = false; // التبديل بين وضع الشبكة والقائمة
+  bool _isGridView = false; // Toggle between grid and list views
 
   // Getters
   List<ProductEntity> get products => _products;
@@ -33,7 +33,7 @@ class RetailerCatalogProvider extends ChangeNotifier {
   String? get selectedCategory => _selectedCategory;
   bool get isGridView => _isGridView;
 
-  /// استخراج التصنيفات المتاحة ديناميكياً من المنتجات المحملة
+  /// Dynamically extracts available categories from loaded products
   List<String> get categories {
     final set = <String>{};
     for (final p in _products) {
@@ -44,17 +44,17 @@ class RetailerCatalogProvider extends ChangeNotifier {
     return set.toList();
   }
 
-  /// تصفية المنتجات محلياً بالاسم والـ SKU والتصنيف
+  /// Filters products locally by name, SKU, and category
   List<ProductEntity> get filteredProducts {
     return _products.where((p) {
-      // 1. تصفية التصنيف
+      // 1. Filter by category
       if (_selectedCategory != null && _selectedCategory!.isNotEmpty) {
         if (p.category?.trim() != _selectedCategory!.trim()) {
           return false;
         }
       }
 
-      // 2. تصفية نص البحث
+      // 2. Filter by search query
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase().trim();
         final nameMatch = p.name.toLowerCase().contains(query);
@@ -68,7 +68,7 @@ class RetailerCatalogProvider extends ChangeNotifier {
     }).toList();
   }
 
-  /// تحميل أول صفحة من كتالوج مورد التاجر
+  /// Loads the first page of retailer's wholesaler catalog
   Future<void> loadCatalog({
     required String wholesalerId,
     bool refresh = false,
@@ -93,7 +93,7 @@ class RetailerCatalogProvider extends ChangeNotifier {
     _isLoading = false;
 
     if (result is Success<ProductsPageResult>) {
-      _products = List.from(result.data.products);
+      _products = List<ProductEntity>.from(result.data.products);
       _lastDocument = result.data.lastDocument;
       _hasMore = result.data.hasMore;
     } else if (result is ApiFailure<ProductsPageResult>) {
@@ -103,7 +103,7 @@ class RetailerCatalogProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// تحميل الصفحة التالية عند التمرير
+  /// Loads subsequent page on scroll
   Future<void> loadMoreCatalog({required String wholesalerId}) async {
     if (_isLoadingMore || !_hasMore || _isLoading || _lastDocument == null) {
       return;
@@ -131,13 +131,13 @@ class RetailerCatalogProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// تعيين نص البحث
+  /// Sets search query text
   void setSearchQuery(String query) {
     _searchQuery = query;
     notifyListeners();
   }
 
-  /// اختيار التصنيف أو إلغاؤه
+  /// Selects or clears the active category
   void setSelectedCategory(String? category) {
     if (_selectedCategory == category) {
       _selectedCategory = null;
@@ -147,7 +147,7 @@ class RetailerCatalogProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// التبديل بين عرض الشبكة وعرض القائمة
+  /// Toggles between grid and list view modes
   void toggleViewMode() {
     _isGridView = !_isGridView;
     notifyListeners();

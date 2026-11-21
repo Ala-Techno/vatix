@@ -8,7 +8,7 @@ import '../../domain/usecases/reconcile_ledger_use_case.dart';
 import '../models/account_model.dart';
 import '../models/ledger_entry_model.dart';
 
-/// نتيجة صفحة بيانات كشف الحساب من Firestore
+/// Page result for ledger statement data from Firestore
 class LedgerStatementPageData {
   final List<LedgerEntryModel> entries;
   final DocumentSnapshot<Map<String, dynamic>>? lastDocument;
@@ -21,21 +21,21 @@ class LedgerStatementPageData {
   });
 }
 
-/// [LedgerRemoteDataSource] — عقد مصدر البيانات لدفتر الأستاذ والحسابات
+/// [LedgerRemoteDataSource] — Data source contract for ledger and accounts
 abstract class LedgerRemoteDataSource {
-  /// استماع حيّ لقائمة الحسابات للمورد (حد أقصى 100)
+  /// Real-time stream of accounts for the wholesaler (max 100)
   Stream<List<AccountModel>> watchAccounts({
     required String wholesalerId,
     int limit = 100,
   });
 
-  /// استماع حيّ لحساب محدد
+  /// Real-time stream of a specific account
   Stream<AccountModel?> watchAccount({
     required String wholesalerId,
     required String retailerId,
   });
 
-  /// جلب صفحة من كشف الحساب (الأحدث أولاً مع إمكانية الفلترة بالعملة)
+  /// Fetches a page of account statement (newest first, optional currency filter)
   Future<LedgerStatementPageData> getStatement({
     required String wholesalerId,
     required String retailerId,
@@ -44,7 +44,7 @@ abstract class LedgerRemoteDataSource {
     DocumentSnapshot<Map<String, dynamic>>? startAfterDocument,
   });
 
-  /// تسجيل سداد نقدي/حوالة/شيك ذرّياً بـ WriteBatch
+  /// Records payment (cash/transfer/cheque) atomically via WriteBatch
   Future<void> recordPayment({
     required String wholesalerId,
     required String retailerId,
@@ -57,7 +57,7 @@ abstract class LedgerRemoteDataSource {
     required String createdBy,
   });
 
-  /// مطابقة القيود الكاملة للتاجر مع أرصدته (للتطوير فقط Task 5.7)
+  /// Reconciles retailer entries against account balances (dev only Task 5.7)
   Future<ReconciliationReport> reconcileAccount({
     required String wholesalerId,
     required String retailerId,
@@ -66,7 +66,7 @@ abstract class LedgerRemoteDataSource {
   });
 }
 
-/// تطبيق مصدر البيانات المتصل بـ Firebase Firestore
+/// Remote data source implementation backed by Firebase Firestore
 class LedgerRemoteDataSourceImpl implements LedgerRemoteDataSource {
   final FirebaseFirestore _firestore;
 
@@ -174,12 +174,12 @@ class LedgerRemoteDataSourceImpl implements LedgerRemoteDataSource {
 
     final batch = _firestore.batch();
 
-    // 1. قيد الـ PAYMENT في جدول ledger
+    // 1. PAYMENT entry in ledger collection
     final ledgerData = plan.toLedgerData();
     ledgerData['createdAt'] = FieldValue.serverTimestamp();
     batch.set(newDoc, ledgerData);
 
-    // 2. تحديث الرصيد في مستند accounts عبر increment(-amount)
+    // 2. Update balance in accounts document via increment(-amount)
     final accountDoc = _accountsRef.doc(plan.accountDocId);
     batch.set(
       accountDoc,
@@ -195,7 +195,7 @@ class LedgerRemoteDataSourceImpl implements LedgerRemoteDataSource {
       SetOptions(merge: true),
     );
 
-    // E3: تنفيذ غير متزامن لتفادي تجميد الواجهة عند انقطاع الشبكة
+    // E3: Unawaited commit to avoid blocking the UI during network issues
     unawaited(batch.commit());
   }
 

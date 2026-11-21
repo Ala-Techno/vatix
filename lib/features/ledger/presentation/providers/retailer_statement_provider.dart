@@ -6,7 +6,7 @@ import '../../domain/entities/ledger_entry_entity.dart';
 import '../../domain/repositories/ledger_repository.dart';
 import '../../domain/usecases/record_payment_use_case.dart';
 
-/// [RetailerStatementProvider] — إدارة كشف الحساب وعملية السداد (Tasks 5.3 & 5.4)
+/// [RetailerStatementProvider] — Manages statement view and payment processing (Tasks 5.3 & 5.4)
 class RetailerStatementProvider extends ChangeNotifier {
   final LedgerRepository _repository;
   final RecordPaymentUseCase _recordPaymentUseCase;
@@ -23,7 +23,7 @@ class RetailerStatementProvider extends ChangeNotifier {
   String? _wholesalerId;
   String? _retailerId;
 
-  // حالة كشف الحساب
+  // Statement state
   bool _isLoadingEntries = false;
   bool _isLoadingMore = false;
   String? _statementError;
@@ -31,9 +31,9 @@ class RetailerStatementProvider extends ChangeNotifier {
   dynamic _lastDocument;
   bool _hasMore = false;
 
-  Currency? _selectedCurrency; // null = الكل
+  Currency? _selectedCurrency; // null = all
 
-  // حالة عملية السداد (مع حارس الضغط المزدوج)
+  // Payment process state (with double-tap guard)
   bool _isSubmittingPayment = false;
   String? _paymentError;
 
@@ -51,7 +51,7 @@ class RetailerStatementProvider extends ChangeNotifier {
 
   // ─── Initialization ──────────────────────────────────────────────────────
 
-  /// بدء التهيئة والاستماع للحساب وجلب أول صفحة من القيود
+  /// Initialize account listener and fetch first statement page
   void init({
     required String wholesalerId,
     required String retailerId,
@@ -63,7 +63,7 @@ class RetailerStatementProvider extends ChangeNotifier {
       _account = initialAccount;
     }
 
-    // استماع لحظي لتحديثات الحساب
+    // Real-time listener for account balance updates
     _accountSub?.cancel();
     _accountSub = _repository
         .watchAccount(wholesalerId: wholesalerId, retailerId: retailerId)
@@ -77,7 +77,7 @@ class RetailerStatementProvider extends ChangeNotifier {
     loadInitialStatement();
   }
 
-  /// تحميل الصفحة الأولى من كشف الحساب
+  /// Load initial page of statement
   Future<void> loadInitialStatement() async {
     if (_wholesalerId == null || _retailerId == null) return;
 
@@ -109,7 +109,7 @@ class RetailerStatementProvider extends ChangeNotifier {
     );
   }
 
-  /// تحميل الصفحة التالية (Pagination)
+  /// Load next page (Pagination)
   Future<void> loadMore() async {
     if (_isLoadingMore || !_hasMore || _lastDocument == null) return;
     if (_wholesalerId == null || _retailerId == null) return;
@@ -140,7 +140,7 @@ class RetailerStatementProvider extends ChangeNotifier {
     );
   }
 
-  /// تغيير فلترة العملة وإعادة تحميل الكشف
+  /// Change currency filter and reload statement
   void setCurrencyFilter(Currency? currency) {
     if (_selectedCurrency != currency) {
       _selectedCurrency = currency;
@@ -148,7 +148,7 @@ class RetailerStatementProvider extends ChangeNotifier {
     }
   }
 
-  /// تنفيذ السداد مع حارس الضغط المزدوج (Task 5.4.3)
+  /// Execute payment with double-tap guard (Task 5.4.3)
   Future<bool> recordPayment({
     required int amount,
     required Currency currency,
@@ -157,7 +157,7 @@ class RetailerStatementProvider extends ChangeNotifier {
     String? note,
     required String createdBy,
   }) async {
-    if (_isSubmittingPayment) return false; // حارس الضغط المزدوج
+    if (_isSubmittingPayment) return false; // Double-tap guard
     if (_wholesalerId == null || _retailerId == null) return false;
 
     _isSubmittingPayment = true;
@@ -184,7 +184,7 @@ class RetailerStatementProvider extends ChangeNotifier {
         _paymentError = null;
         notifyListeners();
 
-        // إعادة تحميل كشف الحساب فوراً ليظهر القيد الجديد
+        // Immediately reload statement to show the new payment entry
         loadInitialStatement();
         return true;
       },
@@ -203,4 +203,3 @@ class RetailerStatementProvider extends ChangeNotifier {
     super.dispose();
   }
 }
-

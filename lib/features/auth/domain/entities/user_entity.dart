@@ -1,9 +1,9 @@
-/// أدوار المستخدمين في النظام
+/// User roles in the system
 enum UserRole {
-  wholesaler, // المورد (الشركة/المصنع)
-  retailer; // التاجر (عميل الشركة)
+  wholesaler, // Wholesaler (company / manufacturer)
+  retailer; // Retailer (client of the company)
 
-  /// تحويل النص القادم من Firestore إلى Enum
+  /// Converts Firestore string to Enum
   static UserRole fromString(String value) {
     switch (value) {
       case 'wholesaler':
@@ -15,17 +15,17 @@ enum UserRole {
     }
   }
 
-  /// تحويل إلى نص للتخزين في Firestore
+  /// Converts to string for Firestore storage
   String toFirestoreString() => name; // 'wholesaler' | 'retailer'
 }
 
-/// حالة حساب التاجر
+/// Retailer account status
 enum RetailerStatus {
-  pending, // بانتظار موافقة المورد
-  active, // نشط ومفعّل
-  blocked; // موقوف
+  pending, // Pending wholesaler approval
+  active, // Active and approved
+  blocked; // Blocked / suspended
 
-  /// تحويل من نص Firestore
+  /// Converts from Firestore string
   static RetailerStatus fromString(String value) {
     switch (value) {
       case 'pending':
@@ -39,14 +39,14 @@ enum RetailerStatus {
     }
   }
 
-  /// تحويل إلى نص للتخزين في Firestore
+  /// Converts to string for Firestore storage
   String toFirestoreString() => name;
 }
 
-/// [UserEntity] — كيان المستخدم النقي في طبقة Domain.
-/// لا يعتمد على Flutter أو Firebase أو أي مكتبة خارجية.
+/// [UserEntity] — Pure user entity in Domain layer.
+/// Independent of Flutter, Firebase, or external libraries.
 class UserEntity {
-  final String id; // doc.id من Firestore
+  final String id; // doc.id from Firestore
   final UserRole role;
   final String businessName;
   final String ownerName;
@@ -55,10 +55,10 @@ class UserEntity {
   final String email;
   final String? address;
   final String? avatarUrl;
-  // حقول التاجر فقط
-  final String? wholesalerId; // معرّف المورد المرتبط به
-  final RetailerStatus? status; // حالة حساب التاجر
-  final String? inviteCode; // الكود المستخدم عند التسجيل
+  // Retailer-only fields
+  final String? wholesalerId; // Linked wholesaler ID
+  final RetailerStatus? status; // Retailer account status
+  final String? inviteCode; // Invite code used during registration
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -79,10 +79,10 @@ class UserEntity {
     required this.updatedAt,
   });
 
-  /// هل المستخدم مورد؟
+  /// Whether the user is a wholesaler
   bool get isWholesaler => role == UserRole.wholesaler;
 
-  /// هل المستخدم تاجر نشط؟
+  /// Whether the user is an active retailer
   bool get isActiveRetailer =>
       role == UserRole.retailer && status == RetailerStatus.active;
 

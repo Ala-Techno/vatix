@@ -3,7 +3,7 @@ import 'package:vatix/core/utils/currency.dart';
 import '../../domain/entities/order_entity.dart';
 import 'order_item_model.dart';
 
-/// [OrderModel] — تمثيل أمر الشراء المتصل بـ Firestore
+/// [OrderModel] — Purchase order model connected to Firestore
 class OrderModel extends OrderEntity {
   const OrderModel({
     required super.id,
@@ -47,17 +47,17 @@ class OrderModel extends OrderEntity {
     );
   }
 
-  /// تحويل من مستند Firestore [DocumentSnapshot]
+  /// Converts from Firestore document [DocumentSnapshot]
   factory OrderModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? {};
 
-    // 1. تحويل عناصر الطلب items
+    // 1. Convert order items
     final rawItems = data['items'] as List<dynamic>? ?? [];
     final items = rawItems
         .map((e) => OrderItemModel.fromFirestoreMap(e as Map<String, dynamic>))
         .toList();
 
-    // 2. تحويل الإجماليات totals
+    // 2. Convert totals
     final rawTotals = data['totals'] as Map<String, dynamic>? ?? {};
     final totals = <Currency, int>{};
     for (final entry in rawTotals.entries) {
@@ -65,11 +65,11 @@ class OrderModel extends OrderEntity {
         final currency = Currency.fromString(entry.key);
         totals[currency] = (entry.value as num).toInt();
       } catch (_) {
-        // تجاهل أي عملة غير صالحة إن وجدت
+        // Ignore any invalid currency if encountered
       }
     }
 
-    // 3. التواريخ Timestamps
+    // 3. Timestamps
     DateTime parseDate(dynamic value) {
       if (value is Timestamp) return value.toDate();
       if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
@@ -103,9 +103,9 @@ class OrderModel extends OrderEntity {
     );
   }
 
-  /// تحويل إلى خريطة Map لتخزينها في Firestore
+  /// Converts to Map for storing in Firestore
   Map<String, dynamic> toFirestoreMap({bool isCreate = false}) {
-    // تحويل totals إلى Map<String, int> بمفاتيح رموز العملات
+    // Convert totals to Map<String, int> keyed by currency codes
     final totalsMap = <String, int>{};
     for (final entry in totals.entries) {
       totalsMap[entry.key.code] = entry.value;
@@ -130,7 +130,7 @@ class OrderModel extends OrderEntity {
       if (note != null && note!.trim().isNotEmpty) 'note': note!.trim(),
       if (rejectionReason != null && rejectionReason!.trim().isNotEmpty)
         'rejectionReason': rejectionReason!.trim(),
-      'assignedDistributorId': null, // مؤجل للنسخة V2
+      'assignedDistributorId': null, // Deferred to V2
       if (isCreate) 'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
       if (approvedAt != null) 'approvedAt': Timestamp.fromDate(approvedAt!),

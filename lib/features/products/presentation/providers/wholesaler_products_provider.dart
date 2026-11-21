@@ -1,11 +1,12 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:vatix/core/errors/api_result.dart';
 import 'package:vatix/core/utils/currency.dart';
 import '../../domain/entities/product_entity.dart';
 import '../../domain/repositories/products_repository.dart';
 
-/// [WholesalerProductsProvider] — إدارة حالة منتجات المورد
-/// يدعم: التحميل بالصفحات (Pagination)، البحث المحلي، التصفية بالتصنيفات، والعمليات الفورية
+/// [WholesalerProductsProvider] — State management for wholesaler products
+/// Supports: pagination, local search, category filtering, and immediate CRUD operations
 class WholesalerProductsProvider extends ChangeNotifier {
   final ProductsRepository _repository;
 
@@ -15,6 +16,8 @@ class WholesalerProductsProvider extends ChangeNotifier {
   List<ProductEntity> _products = [];
   dynamic _lastDocument;
   bool _hasMore = true;
+
+  StreamSubscription<List<ProductEntity>>? _productsSubscription;
 
   bool _isLoading = false;
   bool _isLoadingMore = false;
@@ -34,7 +37,7 @@ class WholesalerProductsProvider extends ChangeNotifier {
   String get searchQuery => _searchQuery;
   String? get selectedCategory => _selectedCategory;
 
-  /// استخراج التصنيفات الفريدة من المنتجات المحملة
+  /// Extracts unique categories from loaded products
   List<String> get categories {
     final set = <String>{};
     for (final p in _products) {
@@ -45,17 +48,17 @@ class WholesalerProductsProvider extends ChangeNotifier {
     return set.toList();
   }
 
-  /// تصفية المنتجات محلياً بالاسم والـ SKU والتصنيف
+  /// Filters products locally by name, SKU, and category
   List<ProductEntity> get filteredProducts {
     return _products.where((p) {
-      // 1. تصفية التصنيف
+      // 1. Filter by category
       if (_selectedCategory != null && _selectedCategory!.isNotEmpty) {
         if (p.category?.trim() != _selectedCategory!.trim()) {
           return false;
         }
       }
 
-      // 2. تصفية نص البحث
+      // 2. Filter by search query
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase().trim();
         final nameMatch = p.name.toLowerCase().contains(query);
@@ -68,7 +71,34 @@ class WholesalerProductsProvider extends ChangeNotifier {
     }).toList();
   }
 
-  /// تحميل أول صفحة أو تحديث القائمة بالسحب (Pull to refresh)
+  /// Starts real-time stream of wholesaler products for automatic live updates
+  void startListening({required String wholesalerId}) {
+    if (wholesalerId.isEmpty) return;
+
+    if (_products.isEmpty) {
+      _isLoading = true;
+      notifyListeners();
+    }
+
+    _productsSubscription?.cancel();
+    _productsSubscription = _repository
+        .watchWholesalerProducts(wholesalerId: wholesalerId, activeOnly: true)
+        .listen(
+      (productsList) {
+        _products = List<ProductEntity>.from(productsList);
+        _isLoading = false;
+        _errorMessage = null;
+        notifyListeners();
+      },
+      onError: (e) {
+        _isLoading = false;
+        _errorMessage = e.toString();
+        notifyListeners();
+      },
+    );
+  }
+
+  /// Loads first page or refreshes list via pull-to-refresh
   Future<void> loadProducts({
     required String wholesalerId,
     bool refresh = false,
@@ -94,7 +124,7 @@ class WholesalerProductsProvider extends ChangeNotifier {
     _isLoading = false;
 
     if (result is Success<ProductsPageResult>) {
-      _products = List.from(result.data.products);
+      _products = List<ProductEntity>.from(result.data.products);
       _lastDocument = result.data.lastDocument;
       _hasMore = result.data.hasMore;
     } else if (result is ApiFailure<ProductsPageResult>) {
@@ -104,7 +134,7 @@ class WholesalerProductsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// تحميل الصفحة التالية عند التمرير لأسفل (Infinite Scroll)
+  /// Loads next page on downward scroll (Infinite Scroll)
   Future<void> loadMoreProducts({required String wholesalerId}) async {
     if (_isLoadingMore || !_hasMore || _isLoading || _lastDocument == null) {
       return;
@@ -133,7 +163,7 @@ class WholesalerProductsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// إضافة منتج جديد
+  /// Adds a new product
   Future<bool> createProduct({
     required String wholesalerId,
     required String name,
@@ -168,7 +198,7 @@ class WholesalerProductsProvider extends ChangeNotifier {
     _isSaving = false;
 
     if (result is Success<ProductEntity>) {
-      // إدراج المنتج في بداية القائمة مباشرة
+      // Insert product at the beginning of the list directly
       _products.insert(0, result.data);
       notifyListeners();
       return true;
@@ -182,7 +212,7 @@ class WholesalerProductsProvider extends ChangeNotifier {
     return false;
   }
 
-  /// تعديل بيانات منتج
+  /// Updates existing product data
   Future<bool> updateProduct({
     required String productId,
     required String name,
@@ -245,11 +275,11 @@ class WholesalerProductsProvider extends ChangeNotifier {
     return false;
   }
 
-  /// تبديل حالة توفر المنتج للطلب (مفتاح سريع)
+  /// Toggles product availability for orders (quick switch)
   Future<bool> toggleAvailability(ProductEntity product) async {
     final newStatus = !product.isAvailable;
 
-    // تحديث تفاؤلي سريع في الواجهة
+    // Fast optimistic UI update
     final index = _products.indexWhere((p) => p.id == product.id);
     if (index != -1) {
       _products[index] = product.copyWith(isAvailable: newStatus);
@@ -262,7 +292,7 @@ class WholesalerProductsProvider extends ChangeNotifier {
     );
 
     if (result is ApiFailure) {
-      // التراجع عن التحديث التفاؤلي عند الفشل
+      // Revert optimistic update on failure
       if (index != -1) {
         _products[index] = product.copyWith(isAvailable: product.isAvailable);
         _errorMessage = (result as ApiFailure).failure.message;
@@ -274,7 +304,7 @@ class WholesalerProductsProvider extends ChangeNotifier {
     return true;
   }
 
-  /// حذف ناعم للمنتج
+  /// Soft deletes a product
   Future<bool> deleteProduct(String productId) async {
     _isSaving = true;
     _errorMessage = null;
@@ -298,20 +328,26 @@ class WholesalerProductsProvider extends ChangeNotifier {
     return false;
   }
 
-  /// تعيين نص البحث المحلي
+  /// Sets local search query
   void setSearchQuery(String query) {
     _searchQuery = query;
     notifyListeners();
   }
 
-  /// تعيين التصنيف المحدد أو إلغاؤه
+  /// Sets or clears selected category
   void setSelectedCategory(String? category) {
     if (_selectedCategory == category) {
-      _selectedCategory = null; // إلغاء التحديد إذا نُقر مجدداً
+      _selectedCategory = null; // Deselect if tapped again
     } else {
       _selectedCategory = category;
     }
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _productsSubscription?.cancel();
+    super.dispose();
   }
 }
 

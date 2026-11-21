@@ -1,25 +1,25 @@
 import 'package:vatix/core/utils/currency.dart';
 
-/// [AccountEntity] — كيان حساب التاجر مع الجملة (Domain Layer)
+/// [AccountEntity] — Retailer account with wholesaler entity (Domain Layer)
 ///
-/// يمثل ملخص الرصيد الحالي لتاجر معين عند جملة معينة.
-/// الأرصدة مخزنة كـ Map من [Currency] إلى int (بأصغر وحدة نقدية).
-/// قيمة موجبة = دين على التاجر، قيمة سالبة = رصيد لصالح التاجر.
+/// Represents current balance summary for a retailer with a wholesaler.
+/// Balances are stored as Map of [Currency] to int (in smallest currency subunit).
+/// Positive value = debt on retailer, negative value = credit balance for retailer.
 class AccountEntity {
-  /// معرف الجملة
+  /// Wholesaler UID
   final String wholesalerId;
 
-  /// معرف التاجر
+  /// Retailer UID
   final String retailerId;
 
-  /// اسم التاجر (للعرض في الواجهة)
+  /// Retailer display name
   final String retailerName;
 
-  /// الأرصدة حسب العملة (subunits)
-  /// مثال: { Currency.yer: 500000, Currency.sar: 25000 }
+  /// Balances per currency (subunits)
+  /// e.g.: { Currency.yer: 500000, Currency.sar: 25000 }
   final Map<Currency, int> balances;
 
-  /// آخر تحديث للحساب
+  /// Last account update timestamp
   final DateTime updatedAt;
 
   const AccountEntity({
@@ -30,16 +30,16 @@ class AccountEntity {
     required this.updatedAt,
   });
 
-  /// المعرف المركب المستخدم في Firestore: {wholesalerId}_{retailerId}
+  /// Composite document ID used in Firestore: {wholesalerId}_{retailerId}
   String get documentId => '${wholesalerId}_$retailerId';
 
-  /// رصيد عملة محددة (يرجع 0 إذا لم تكن موجودة)
+  /// Balance for specific currency (defaults to 0 if not present)
   int balanceFor(Currency currency) => balances[currency] ?? 0;
 
-  /// هل هناك دين مستحق بأي عملة؟
+  /// Whether there is outstanding debt in any currency
   bool get hasDebt => balances.values.any((v) => v > 0);
 
-  /// هل الحساب صفري تماماً لجميع العملات؟
+  /// Whether the account is fully settled across all currencies
   bool get isSettled => balances.values.every((v) => v == 0);
 
   @override
@@ -57,4 +57,3 @@ class AccountEntity {
   String toString() =>
       'AccountEntity($wholesalerId/$retailerId, balances: $balances)';
 }
-

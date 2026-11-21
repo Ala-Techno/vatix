@@ -3,7 +3,7 @@ import 'package:vatix/core/errors/failures.dart';
 import 'package:vatix/core/utils/unit.dart';
 import '../repositories/orders_repository.dart';
 
-/// [RejectOrderUseCase] — حالة استخدام رفض أمر الشراء (Task 4.6.1)
+/// [RejectOrderUseCase] — Use case for rejecting purchase order (Task 4.6.1)
 class RejectOrderUseCase {
   final OrdersRepository _repository;
 
@@ -14,7 +14,7 @@ class RejectOrderUseCase {
     required String rejectionReason,
   }) async {
     final reason = rejectionReason.trim();
-    // التحقق من أن السبب لا يقل عن 3 أحرف (حسب متطلبات الخطة 4.6.1)
+    // Validate that reason is at least 3 characters (per requirement 4.6.1)
     if (reason.length < 3) {
       return ApiFailure(
         const ValidationFailure('سبب الرفض إلزامي ويجب ألا يقل عن 3 أحرف.'),
@@ -28,7 +28,7 @@ class RejectOrderUseCase {
   }
 }
 
-/// [DeliverOrderUseCase] — حالة استخدام تسليم أمر الشراء (Task 4.6.2)
+/// [DeliverOrderUseCase] — Use case for delivering purchase order (Task 4.6.2)
 class DeliverOrderUseCase {
   final OrdersRepository _repository;
 

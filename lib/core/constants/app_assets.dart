@@ -5,7 +5,7 @@ abstract class AppAssets {
 
   // ── Base Paths ──────────────────────────────────────────────────────────
   static const String _imagesPath = 'assets/images';
-  // static const String _svgsPath = 'assets/svgs'; // في حال استخدمنا SVG لاحقاً
+  // static const String _svgsPath = 'assets/svgs'; // If we use SVGs later
 
   // ── Images ──────────────────────────────────────────────────────────────
   static const String appLogo = '$_imagesPath/app_logo.png';
@@ -13,8 +13,8 @@ abstract class AppAssets {
   static const String placeholder = '$_imagesPath/placeholder.png';
   static const String banner = '$_imagesPath/banner_offers.jpg';
   static const String banner2 = '$_imagesPath/banner_offers_2.jpg';
-  
+  static const String splash = '$_imagesPath/splash_logo.png';
 
-  // ── Icons / SVGs (إن وجدت) ────────────────────────────────────────────────
+  // ── Icons / SVGs (if any) ────────────────────────────────────────────────
   // static const String icGoogle = '$_svgsPath/ic_google.svg';
 }

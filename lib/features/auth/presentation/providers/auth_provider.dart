@@ -11,19 +11,19 @@ import '../../domain/usecases/logout_use_case.dart';
 import '../../domain/usecases/register_retailer_use_case.dart';
 import '../../domain/usecases/reset_password_use_case.dart';
 
-/// حالة الجلسة — تحدد أي شاشة تُعرض في AuthGate
+/// Session status — determines which screen is displayed in AuthGate
 enum AuthStatus {
-  unknown, // جارٍ التحقق (عرض مؤشر التحميل)
-  signedOut, // لا يوجد مستخدم مسجّل
-  noProfile, // مستخدم موجود في Auth لكن لا مستند users (تسجيل لم يكتمل)
-  wholesaler, // مورد — يذهب للـ WholesalerShell
-  retailerPending, // تاجر بانتظار الموافقة
-  retailerActive, // تاجر نشط — يذهب للـ RetailerShell
-  retailerBlocked, // تاجر موقوف
+  unknown, // Checking session (show loading indicator)
+  signedOut, // No logged-in user
+  noProfile, // User exists in Auth but has no users document (incomplete registration)
+  wholesaler, // Wholesaler — navigates to WholesalerShell
+  retailerPending, // Retailer awaiting approval
+  retailerActive, // Active retailer — navigates to RetailerShell
+  retailerBlocked, // Blocked retailer
 }
 
-/// [AuthProvider] — Provider جذري واحد في أعلى الشجرة.
-/// مصدر الحقيقة للمستخدم والدور والحالة في التطبيق كله.
+/// [AuthProvider] — Single root provider at top of the tree.
+/// Source of truth for user, role, and auth status across the app.
 class AuthProvider extends ChangeNotifier {
   final AuthRepository _authRepository;
   final LoginUseCase _loginUseCase;
@@ -45,7 +45,7 @@ class AuthProvider extends ChangeNotifier {
     _init();
   }
 
-  // ─── الحالة ───────────────────────────────────────────────────────────────
+  // ─── State ─────────────────────────────────────────────────────────────
   AuthStatus _status = AuthStatus.unknown;
   UserEntity? _user;
   bool _isLoading = false;
@@ -60,7 +60,7 @@ class AuthProvider extends ChangeNotifier {
   StreamSubscription<dynamic>? _authSub;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _userDocSub;
 
-  // ─── تهيئة المستمعين ─────────────────────────────────────────────────────
+  // ─── Initialize Listeners ─────────────────────────────────────────────
   void _init() {
     _authSub = _authRepository.watchAuthUser().listen((firebaseUser) {
       _userDocSub?.cancel();
@@ -77,7 +77,7 @@ class AuthProvider extends ChangeNotifier {
     _userDocSub = _authRepository.watchUserDoc(uid).listen(
       (snapshot) {
         if (!snapshot.exists || snapshot.data() == null) {
-          // إذا كان التسجيل قيد التنفيذ الآن والمستند في طور الكتابة — ننتظر
+          // If registration is in progress and document is being written — wait
           if (_isLoading) return;
           _user = null;
           _setStatus(AuthStatus.noProfile);
@@ -121,7 +121,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── تسجيل الدخول ────────────────────────────────────────────────────────
+  // ─── Sign In ──────────────────────────────────────────────────────────
   Future<bool> login({
     required String email,
     required String password,
@@ -131,7 +131,7 @@ class AuthProvider extends ChangeNotifier {
     return _handleResult(result);
   }
 
-  // ─── تسجيل تاجر جديد ─────────────────────────────────────────────────────
+  // ─── Register New Retailer ───────────────────────────────────────────
   Future<bool> registerRetailer({
     required String email,
     required String password,
@@ -154,13 +154,13 @@ class AuthProvider extends ChangeNotifier {
     return _handleResult(result);
   }
 
-  // ─── تسجيل الخروج ────────────────────────────────────────────────────────
+  // ─── Sign Out ─────────────────────────────────────────────────────────
   Future<void> logout() async {
     await _logoutUseCase();
-    // watchAuthUser() سيُطلق signedOut تلقائياً
+    // watchAuthUser() will trigger signedOut automatically
   }
 
-  // ─── إعادة تعيين كلمة المرور ─────────────────────────────────────────────
+  // ─── Password Reset ───────────────────────────────────────────────────
   Future<bool> sendPasswordResetEmail(String email) async {
     _setLoading(true);
     final result = await _resetPasswordUseCase(email);
@@ -177,7 +177,7 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
 
-  // ─── مساعدات ─────────────────────────────────────────────────────────────
+  // ─── Helpers ──────────────────────────────────────────────────────────
   bool _handleResult<T>(ApiResult<T> result) {
     _isLoading = false;
     if (result is Success<T>) {

@@ -1,7 +1,7 @@
 import 'package:vatix/core/utils/currency.dart';
 import '../../domain/entities/order_item_entity.dart';
 
-/// [OrderItemModel] — تمثيل بند الطلب للتحويل من وإلى Firestore
+/// [OrderItemModel] — Order item representation for serialization to and from Firestore
 class OrderItemModel extends OrderItemEntity {
   const OrderItemModel({
     required super.productId,

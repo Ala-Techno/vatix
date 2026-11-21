@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:vatix/core/theme/app_colors.dart';
 import 'package:vatix/core/utils/currency.dart';
 import 'package:vatix/core/utils/money_formatter.dart';
-import 'package:vatix/core/widgets/confirmation_dialog.dart';
 import 'package:vatix/core/widgets/empty_state_widget.dart';
 import 'package:vatix/core/widgets/error_state_widget.dart';
 import 'package:vatix/core/widgets/shimmer_loading.dart';
@@ -13,12 +12,12 @@ import '../../domain/entities/account_entity.dart';
 import '../../domain/entities/ledger_entry_entity.dart';
 import '../providers/retailer_account_provider.dart';
 
-/// [RetailerAccountScreen] — شاشة «حسابي» للتاجر (Task 5.5)
+/// [RetailerAccountScreen] — Retailer "My Account" screen (Task 5.5)
 ///
-/// تتضمن:
-/// - بطاقات الأرصدة لكل عملة (قراءة فقط، محدثة لحظياً Task 5.5.1)
-/// - كشف الحركات بصفحات وفلترة عملات (Task 5.5.2)
-/// - بيانات الحساب وزر تسجيل الخروج (Task 5.5.3)
+/// Includes:
+/// - Balance cards per currency (read-only, real-time updated Task 5.5.1)
+/// - Paginated statement list with currency filters (Task 5.5.2)
+/// - Account info and logout action (Task 5.5.3)
 class RetailerAccountScreen extends StatefulWidget {
   const RetailerAccountScreen({super.key});
 
@@ -71,7 +70,7 @@ class _RetailerAccountScreenState extends State<RetailerAccountScreen> {
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            // 1. بطاقة بيانات الحساب والمنشأة (Task 5.5.3)
+            // 1. Account and facility info card (Task 5.5.3)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
@@ -79,7 +78,7 @@ class _RetailerAccountScreenState extends State<RetailerAccountScreen> {
               ),
             ),
 
-            // 2. بطاقات الأرصدة لكل عملة (Task 5.5.1)
+            // 2. Balance cards per currency (Task 5.5.1)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -89,7 +88,7 @@ class _RetailerAccountScreenState extends State<RetailerAccountScreen> {
 
             const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
-            // 3. ترويسة وفلتر كشف الحركات (Task 5.5.2)
+            // 3. Statement header and filter (Task 5.5.2)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -123,14 +122,14 @@ class _RetailerAccountScreenState extends State<RetailerAccountScreen> {
               ),
             ),
 
-            // شريط تصفية العملات
+            // Currency filter bar
             SliverToBoxAdapter(
               child: _buildCurrencyFilters(provider),
             ),
 
             const SliverToBoxAdapter(child: SizedBox(height: 8)),
 
-            // 4. قائمة حركات كشف الحساب
+            // 4. Statement transaction list
             _buildStatementList(provider),
 
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -140,21 +139,21 @@ class _RetailerAccountScreenState extends State<RetailerAccountScreen> {
     );
   }
 
-  /// بطاقة بيانات الحساب والمورد وزر تسجيل الخروج (Task 5.5.3)
+  /// Account and business info card
   Widget _buildAccountInfoCard(BuildContext context, dynamic user) {
     if (user == null) return const SizedBox.shrink();
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.borderSubtle),
+        boxShadow: [
           BoxShadow(
-            color: AppColors.shadowColor,
-            blurRadius: 8,
-            offset: Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -163,16 +162,36 @@ class _RetailerAccountScreenState extends State<RetailerAccountScreen> {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                child: const Icon(
-                  Icons.storefront_rounded,
-                  color: AppColors.primary,
-                  size: 28,
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primaryLight,
+                      AppColors.primaryLight.withValues(alpha: 0.8),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryLight.withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.storefront_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,59 +202,121 @@ class _RetailerAccountScreenState extends State<RetailerAccountScreen> {
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                         fontFamily: 'Cairo',
+                        color: AppColors.primary,
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      'المالك: ${user.ownerName}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                        fontFamily: 'Cairo',
-                      ),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.person_outline_rounded,
+                          size: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          user.ownerName,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                            fontFamily: 'Cairo',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              IconButton(
-                tooltip: 'تسجيل الخروج',
-                icon: const Icon(Icons.logout_rounded, color: AppColors.statusBlocked),
-                onPressed: () => _confirmLogout(context),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppColors.primaryLight.withValues(alpha: 0.2),
+                    width: 0.8,
+                  ),
+                ),
+                child: const Text(
+                  'حساب نشط',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryLight,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
               ),
             ],
           ),
-          const Divider(height: 20),
-          Row(
-            children: [
-              const Icon(Icons.phone_outlined, size: 16, color: AppColors.textHint),
-              const SizedBox(width: 6),
-              Text(
-                user.phone,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                  fontFamily: 'Cairo',
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.borderSubtle),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Icon(Icons.phone_outlined, size: 16, color: AppColors.primaryLight),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          user.phone,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Cairo',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              const Icon(Icons.location_city_outlined, size: 16, color: AppColors.textHint),
-              const SizedBox(width: 6),
-              Text(
-                user.city,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                  fontFamily: 'Cairo',
+                Container(
+                  width: 1,
+                  height: 18,
+                  color: AppColors.borderSubtle,
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
                 ),
-              ),
-            ],
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Icon(Icons.location_on_outlined, size: 16, color: AppColors.secondary),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          user.city,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Cairo',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  /// بطاقات الأرصدة لكل عملة (Task 5.5.1)
+  /// Balance cards per currency (Task 5.5.1)
   Widget _buildBalancesCard(AccountEntity? account) {
     if (account == null) {
       return const ShimmerLoading(
@@ -365,7 +446,7 @@ class _RetailerAccountScreenState extends State<RetailerAccountScreen> {
     );
   }
 
-  /// شريط فلترة العملات
+  /// Currency filter bar
   Widget _buildCurrencyFilters(RetailerAccountProvider provider) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -430,7 +511,7 @@ class _RetailerAccountScreenState extends State<RetailerAccountScreen> {
     );
   }
 
-  /// قائمة حركات كشف الحساب بصفحات (Task 5.5.2)
+  /// Paginated statement transactions list (Task 5.5.2)
   Widget _buildStatementList(RetailerAccountProvider provider) {
     if (provider.isLoadingEntries && provider.entries.isEmpty) {
       return SliverPadding(
@@ -618,19 +699,6 @@ class _RetailerAccountScreenState extends State<RetailerAccountScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _confirmLogout(BuildContext context) async {
-    final confirm = await showAppConfirmationDialog(
-      context: context,
-      title: 'تسجيل الخروج',
-      message: 'هل أنت متأكد من رغبتك في تسجيل الخروج من حساب التاجر؟',
-      confirmLabel: 'خروج',
-      confirmColor: AppColors.statusBlocked,
-    );
-    if (confirm == true && context.mounted) {
-      context.read<AuthProvider>().logout();
-    }
   }
 }
 

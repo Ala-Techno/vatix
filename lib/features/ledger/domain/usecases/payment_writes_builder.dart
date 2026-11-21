@@ -1,7 +1,7 @@
 import 'package:vatix/core/utils/currency.dart';
 import '../entities/ledger_entry_entity.dart';
 
-/// [PaymentWritesPlan] — خطة نقية لكتابة السداد الذرية في Firestore (Task 5.4.1 & 5.4.4)
+/// [PaymentWritesPlan] — Pure plan for atomic payment writes in Firestore (Task 5.4.1 & 5.4.4)
 class PaymentWritesPlan {
   final String ledgerDocId;
   final String wholesalerId;
@@ -14,7 +14,7 @@ class PaymentWritesPlan {
   final String? note;
   final String createdBy;
   final String accountDocId;
-  final int balanceDecrement; // القيمة السالبة للـ FieldValue.increment (-amount)
+  final int balanceDecrement; // Negative value for FieldValue.increment (-amount)
 
   const PaymentWritesPlan({
     required this.ledgerDocId,
@@ -31,7 +31,7 @@ class PaymentWritesPlan {
     required this.balanceDecrement,
   });
 
-  /// تحويل بيانات قيد الـ PAYMENT لـ Firestore
+  /// Convert PAYMENT ledger entry to Firestore map data
   Map<String, dynamic> toLedgerData() {
     return {
       'wholesalerId': wholesalerId,
@@ -49,7 +49,7 @@ class PaymentWritesPlan {
   }
 }
 
-/// دالة نقية 100% لبناء خطة السداد دون لمس Firestore لتسهيل اختبار الوحدة (Task 5.4.4)
+/// Pure function to build payment writes without touching Firestore for unit testability (Task 5.4.4)
 PaymentWritesPlan buildPaymentWrites({
   required String wholesalerId,
   required String retailerId,
@@ -95,4 +95,3 @@ PaymentWritesPlan buildPaymentWrites({
     balanceDecrement: -amount,
   );
 }
-

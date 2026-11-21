@@ -6,8 +6,8 @@ import 'package:vatix/core/widgets/confirmation_dialog.dart';
 import 'package:vatix/core/widgets/shimmer_loading.dart';
 import '../providers/customers_provider.dart';
 
-/// [InviteCodeCard] — بطاقة عرض كود الدعوة للمورد
-/// تصميم متوازن ومريح مع حماية كاملة من الـ RenderFlex Overflow
+/// [InviteCodeCard] — Displays wholesaler invite code.
+/// Designed with responsive layout preventing RenderFlex overflow.
 class InviteCodeCard extends StatelessWidget {
   const InviteCodeCard({super.key});
 
@@ -43,7 +43,7 @@ class InviteCodeCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── رأس البطاقة: الأيقونة، العنوان، شارة الحالة ───────────────
+            // ── Card Header: Icon, Title, Status Badge ───────────────
             Row(
               children: [
                 Container(
@@ -110,7 +110,7 @@ class InviteCodeCard extends StatelessWidget {
             ),
             const SizedBox(height: 14),
 
-            // ── كود الدعوة وزر النسخ ─────────────────────────────────────
+            // ── Invite Code and Copy Button ─────────────────────────────────────
             if (activeInvite == null)
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
@@ -206,7 +206,7 @@ class InviteCodeCard extends StatelessWidget {
               ),
             const SizedBox(height: 12),
 
-            // ── زر التدوير المحمي ─────────────────────────────────────────
+            // ── Rotate Button ─────────────────────────────────────────
             SizedBox(
               height: 42,
               child: OutlinedButton(

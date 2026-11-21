@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -9,19 +10,18 @@ import 'package:vatix/features/auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/order_entity.dart';
 import '../../domain/usecases/approve_order_usecase.dart';
 import '../../domain/usecases/reject_and_deliver_order_usecases.dart';
-import '../providers/wholesaler_orders_provider.dart';
 import '../widgets/order_approval_bottom_sheet.dart';
 
-/// [WholesalerOrderDetailsScreen] — تفاصيل الطلب الوارد للمورد (Task 4.3.2)
-/// يشتمل على:
-/// 1. بيانات التاجر (الاسم، الهاتف مع إمكانية النسخ)
-/// 2. لقطة الأصناف والكميات والأسعار (Items Snapshot)
-/// 3. الإجماليات لكل عملة
-/// 4. الملاحظات إن وجدت
-/// 5. الحالة وشارتها
-/// 6. أزرار الإجراء حسب الحالة (Task 4.3.3):
-///    - معلق (pending): زر القبول (يفتح Bottom Sheet) + زر الرفض
-///    - مقبول (approved): زر تأكيد التسليم
+/// [WholesalerOrderDetailsScreen] — Incoming order details for the wholesaler (Task 4.3.2)
+/// Includes:
+/// 1. Retailer info (name, phone with copy action)
+/// 2. Items snapshot (names, quantities, unit prices)
+/// 3. Per-currency totals
+/// 4. Order note (if any)
+/// 5. Status badge
+/// 6. Action buttons based on status (Task 4.3.3):
+///    - pending: Approve button (opens bottom sheet) + Reject button
+///    - approved: Confirm delivery button
 class WholesalerOrderDetailsScreen extends StatefulWidget {
   final OrderEntity order;
 
@@ -39,10 +39,55 @@ class _WholesalerOrderDetailsScreenState
     extends State<WholesalerOrderDetailsScreen> {
   late OrderEntity _currentOrder;
 
+  // Stock availability check state
+  bool _isCheckingStock = false;
+  final List<String> _stockDeficitMessages = [];
+  bool get _hasStockDeficit => _stockDeficitMessages.isNotEmpty;
+
   @override
   void initState() {
     super.initState();
     _currentOrder = widget.order;
+    if (_currentOrder.status == OrderStatus.pending) {
+      _checkStockAvailability();
+    }
+  }
+
+  /// Checks real-time stock availability for each item in the order
+  Future<void> _checkStockAvailability() async {
+    setState(() => _isCheckingStock = true);
+    _stockDeficitMessages.clear();
+
+    try {
+      final firestore = FirebaseFirestore.instance;
+      for (final item in _currentOrder.items) {
+        final pid = item.productId.trim();
+        if (pid.isEmpty) continue;
+
+        final doc = await firestore.collection('products').doc(pid).get();
+        if (doc.exists) {
+          final data = doc.data() ?? {};
+          final currentStock = (data['stockQuantity'] as num?)?.toInt();
+          final isAvailable = data['isAvailable'] as bool? ?? true;
+
+          if (currentStock != null && currentStock < item.quantity) {
+            _stockDeficitMessages.add(
+              'الصنف "${item.name}": المطلوب (${item.quantity} ${item.unit}) والمتوفر في المخزون ($currentStock فقط).',
+            );
+          } else if (!isAvailable && (currentStock == null || currentStock <= 0)) {
+            _stockDeficitMessages.add(
+              'الصنف "${item.name}": تم إيقافه ونفذت الكمية بالكامل من المستودع.',
+            );
+          }
+        }
+      }
+    } catch (_) {
+      // Silently ignore network errors during proactive stock check
+    }
+
+    if (mounted) {
+      setState(() => _isCheckingStock = false);
+    }
   }
 
   void _copyPhone(String phone) {
@@ -79,18 +124,7 @@ class _WholesalerOrderDetailsScreenState
 
         switch (result) {
           case Success():
-            setState(() {
-              _currentOrder = _currentOrder.copyWith(
-                status: OrderStatus.approved,
-                paymentType: paymentType,
-                approvedAt: DateTime.now(),
-              );
-            });
-            // تحديث قائمة الطلبات في المزود تلقائياً
-            try {
-              context.read<WholesalerOrdersProvider>().refreshOrders();
-            } catch (_) {}
-
+            if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -100,6 +134,8 @@ class _WholesalerOrderDetailsScreenState
                 backgroundColor: AppColors.statusActive,
               ),
             );
+            // Stream updates the list automatically — navigate back immediately
+            Navigator.of(context).pop();
             break;
           case ApiFailure(failure: final failure):
             ScaffoldMessenger.of(context).showSnackBar(
@@ -118,7 +154,10 @@ class _WholesalerOrderDetailsScreenState
   }
 
   void _openRejectDialog() {
-    final reasonController = TextEditingController();
+    final defaultReason = _hasStockDeficit
+        ? 'نعتذر، نفذت كمية المخزون لبعض الأصناف المطلوبة بعد اعتماد طلبات سابقة.'
+        : '';
+    final reasonController = TextEditingController(text: defaultReason);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -189,17 +228,7 @@ class _WholesalerOrderDetailsScreenState
 
               switch (result) {
                 case Success():
-                  setState(() {
-                    _currentOrder = _currentOrder.copyWith(
-                      status: OrderStatus.rejected,
-                      rejectionReason: reason,
-                    );
-                  });
-                  // تحديث قائمة الطلبات في المزود تلقائياً
-                  try {
-                    context.read<WholesalerOrdersProvider>().refreshOrders();
-                  } catch (_) {}
-
+                  if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text(
@@ -209,6 +238,8 @@ class _WholesalerOrderDetailsScreenState
                       backgroundColor: AppColors.statusBlocked,
                     ),
                   );
+                  // Stream updates the list automatically — navigate back immediately
+                  Navigator.of(context).pop();
                   break;
                 case ApiFailure(failure: final failure):
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -245,17 +276,7 @@ class _WholesalerOrderDetailsScreenState
 
     switch (result) {
       case Success():
-        setState(() {
-          _currentOrder = _currentOrder.copyWith(
-            status: OrderStatus.delivered,
-            deliveredAt: DateTime.now(),
-          );
-        });
-        // تحديث قائمة الطلبات في المزود تلقائياً
-        try {
-          context.read<WholesalerOrdersProvider>().refreshOrders();
-        } catch (_) {}
-
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -265,6 +286,8 @@ class _WholesalerOrderDetailsScreenState
             backgroundColor: AppColors.primaryLight,
           ),
         );
+        // Stream updates the list automatically — navigate back immediately
+        Navigator.of(context).pop();
         break;
       case ApiFailure(failure: final failure):
         ScaffoldMessenger.of(context).showSnackBar(
@@ -300,17 +323,17 @@ class _WholesalerOrderDetailsScreenState
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                // 1. بطاقة بيانات التاجر
+                // 1. Retailer info card
                 _buildRetailerCard(),
 
                 const SizedBox(height: 16),
 
-                // 2. بطاقة حالة الطلب
+                // 2. Order status card
                 _buildStatusCard(),
 
                 const SizedBox(height: 16),
 
-                // 3. لقطة الأصناف المطلوبة
+                // 3. Requested items snapshot
                 _buildItemsCard(),
 
                 if (_currentOrder.note != null &&
@@ -321,7 +344,7 @@ class _WholesalerOrderDetailsScreenState
 
                 const SizedBox(height: 16),
 
-                // 4. بطاقة الإجماليات لكل عملة
+                // 4. Per-currency totals card
                 _buildTotalsCard(),
 
                 const SizedBox(height: 24),
@@ -329,7 +352,7 @@ class _WholesalerOrderDetailsScreenState
             ),
           ),
 
-          // 5. شريط الأزرار والإجراءات السفلية (Task 4.3.3)
+          // 5. Bottom action bar (Task 4.3.3)
           _buildActionBottomBar(),
         ],
       ),
@@ -640,7 +663,7 @@ class _WholesalerOrderDetailsScreenState
   }
 
   Widget _buildActionBottomBar() {
-    // 1. إذا كان الطلب قيد الانتظار (pending) => قبول / رفض
+    // 1. Pending order => approve / reject with stock availability check
     if (_currentOrder.status == OrderStatus.pending) {
       return Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
@@ -655,55 +678,152 @@ class _WholesalerOrderDetailsScreenState
             ),
           ],
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // زر الرفض
-            Expanded(
-              flex: 2,
-              child: OutlinedButton(
-                onPressed: _openRejectDialog,
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(0, 48),
-                  foregroundColor: AppColors.statusBlocked,
-                  side: const BorderSide(color: AppColors.statusBlocked),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            // Warning banner if there is a stock deficit or unavailable items
+            if (_hasStockDeficit) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.statusBlockedBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.statusBlocked.withValues(alpha: 0.35),
                   ),
                 ),
-                child: const Text(
-                  'رفض الطلب',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: AppColors.statusBlocked,
+                          size: 20,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'تنبيه: لا يمكن اعتماد الطلب (عجز في المخزون)',
+                            style: TextStyle(
+                              fontFamily: 'Cairo',
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.statusBlocked,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    ..._stockDeficitMessages.map(
+                      (msg) => Padding(
+                        padding: const EdgeInsets.only(bottom: 3),
+                        child: Text(
+                          '• $msg',
+                          style: const TextStyle(
+                            fontFamily: 'Cairo',
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'تم اعتماد طلبات أخرى استنفذت المخزون المتاح. يُرجى رفض هذا الطلب مع إشعار التاجر.',
+                      style: TextStyle(
+                        fontFamily: 'Cairo',
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            // زر القبول والاعتماد (يفتح النافذة المنبثقة لاختيار دين/نقد)
-            Expanded(
-              flex: 3,
-              child: ElevatedButton.icon(
-                onPressed: _openApprovalSheet,
-                icon: const Icon(Icons.check_circle_outline_rounded, size: 20),
-                label: const Text(
-                  'اعتماد الطلب',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
-                ),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(0, 48),
-                  backgroundColor: AppColors.statusActive,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            ],
+
+            Row(
+              children: [
+                // Rejection button (always available, best option when out of stock)
+                Expanded(
+                  flex: 2,
+                  child: OutlinedButton(
+                    onPressed: _openRejectDialog,
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 48),
+                      foregroundColor: AppColors.statusBlocked,
+                      side: const BorderSide(color: AppColors.statusBlocked, width: 1.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'رفض الطلب',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
+                    ),
                   ),
-                  elevation: 0,
                 ),
-              ),
+                const SizedBox(width: 12),
+
+                // Approval button (automatically disabled if stock deficit exists)
+                Expanded(
+                  flex: 3,
+                  child: ElevatedButton.icon(
+                    onPressed: (_hasStockDeficit || _isCheckingStock)
+                        ? null
+                        : _openApprovalSheet,
+                    icon: _isCheckingStock
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Icon(
+                            _hasStockDeficit
+                                ? Icons.block_rounded
+                                : Icons.check_circle_outline_rounded,
+                            size: 20,
+                          ),
+                    label: Text(
+                      _isCheckingStock
+                          ? 'جاري فحص المخزون...'
+                          : _hasStockDeficit
+                              ? 'المخزون غير كافٍ'
+                              : 'اعتماد الطلب',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(0, 48),
+                      backgroundColor: AppColors.statusActive,
+                      disabledBackgroundColor: const Color(0xFFCBD5E1),
+                      foregroundColor: Colors.white,
+                      disabledForegroundColor: const Color(0xFF64748B),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       );
     }
 
-    // 2. إذا كان الطلب معتمد (approved) => زر تأكيد التسليم (Task 4.3.3)
+    // 2. Approved order => Confirm delivery button (Task 4.3.3)
     if (_currentOrder.status == OrderStatus.approved) {
       return Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
@@ -734,7 +854,7 @@ class _WholesalerOrderDetailsScreenState
       );
     }
 
-    // في باقي الحالات (مُسلَّم أو ملغي أو مرفوض) لا توجد أزرار إجراء
+    // In other statuses (delivered, cancelled, rejected), no action buttons
     return const SizedBox.shrink();
   }
 }

@@ -11,7 +11,7 @@ import '../../domain/entities/account_entity.dart';
 import '../providers/wholesaler_ledger_provider.dart';
 import 'retailer_statement_screen.dart';
 
-/// [WholesalerLedgerScreen] — شاشة دفتر ديون المورد وحسابات التجار (Task 5.2)
+/// [WholesalerLedgerScreen] — Wholesaler debts and accounts ledger screen (Task 5.2)
 class WholesalerLedgerScreen extends StatefulWidget {
   const WholesalerLedgerScreen({super.key});
 
@@ -52,7 +52,7 @@ class _WholesalerLedgerScreenState extends State<WholesalerLedgerScreen> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            // 1. ترويسة إجمالي الذمم والديون المستحقة لكل عملة (Task 5.2.3)
+            // 1. Total receivables header per currency (Task 5.2.3)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
@@ -60,7 +60,7 @@ class _WholesalerLedgerScreenState extends State<WholesalerLedgerScreen> {
               ),
             ),
 
-            // 2. شريط البحث والفلترة (Task 5.2.2)
+            // 2. Search and filter bar (Task 5.2.2)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -131,7 +131,7 @@ class _WholesalerLedgerScreenState extends State<WholesalerLedgerScreen> {
               child: SizedBox(height: 12),
             ),
 
-            // 3. قائمة حسابات التجار
+            // 3. Retailer accounts list
             _buildAccountsList(provider),
 
             const SliverToBoxAdapter(
@@ -143,7 +143,7 @@ class _WholesalerLedgerScreenState extends State<WholesalerLedgerScreen> {
     );
   }
 
-  /// ترويسة إجمالي الذمم والديون المستحقة لكل عملة (Task 5.2.3)
+  /// Total receivables header per currency (Task 5.2.3)
   Widget _buildReceivablesHeader(WholesalerLedgerProvider provider) {
     if (provider.isLoading && provider.accounts.isEmpty) {
       return const ShimmerLoading(
@@ -265,7 +265,7 @@ class _WholesalerLedgerScreenState extends State<WholesalerLedgerScreen> {
     );
   }
 
-  /// محتوى قائمة الحسابات
+  /// Accounts list content
   Widget _buildAccountsList(WholesalerLedgerProvider provider) {
     if (provider.isLoading && provider.accounts.isEmpty) {
       return SliverPadding(
@@ -331,7 +331,7 @@ class _WholesalerLedgerScreenState extends State<WholesalerLedgerScreen> {
     );
   }
 
-  /// بطاقة التاجر في قائمة الدفتر (Task 5.2.1)
+  /// Retailer card in ledger list (Task 5.2.1)
   Widget _buildAccountTile(AccountEntity account) {
     final hasDebt = account.hasDebt;
     final user = context.read<AuthProvider>().user;
@@ -421,7 +421,7 @@ class _WholesalerLedgerScreenState extends State<WholesalerLedgerScreen> {
               ),
               const Divider(height: 20),
 
-              // عرض الأرصدة لكل عملة (Task 5.2.1)
+              // Display balances per currency (Task 5.2.1)
               Wrap(
                 spacing: 8,
                 runSpacing: 6,

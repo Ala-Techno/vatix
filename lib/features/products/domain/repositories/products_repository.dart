@@ -3,11 +3,11 @@ import 'package:vatix/core/utils/currency.dart';
 import 'package:vatix/core/utils/unit.dart';
 import '../entities/product_entity.dart';
 
-/// [ProductsRepository] — عقد الـ Domain لإدارة المنتجات للمورد وتصفح الكتالوج للتاجر
+/// [ProductsRepository] — Domain contract for wholesaler product management and retailer catalog browsing
 abstract class ProductsRepository {
-  // ── عمليات المورد (Wholesaler Operations) ───────────────────────────────────
+  // ── Wholesaler Operations ──────────────────────────────────────────────────
 
-  /// إنشاء منتج جديد في Firestore
+  /// Creates a new product in Firestore
   Future<ApiResult<ProductEntity>> createProduct({
     required String wholesalerId,
     required String name,
@@ -22,7 +22,7 @@ abstract class ProductsRepository {
     bool isAvailable = true,
   });
 
-  /// تعديل بيانات منتج موجود
+  /// Updates existing product data
   Future<ApiResult<Unit>> updateProduct({
     required String productId,
     required String name,
@@ -37,19 +37,25 @@ abstract class ProductsRepository {
     required bool isAvailable,
   });
 
-  /// تغيير حالة توفر المنتج للطلب (isAvailable)
+  /// Toggles product availability for orders (isAvailable)
   Future<ApiResult<Unit>> setProductAvailable({
     required String productId,
     required bool isAvailable,
   });
 
-  /// حذف ناعم للمنتج (تحويل isActive إلى false)
+  /// Soft deletes a product (sets isActive to false)
   Future<ApiResult<Unit>> softDeleteProduct({
     required String productId,
   });
 
-  /// جلب صفحة منتجات المورد مع الترتيب والـ Pagination
-  /// لا مستمع حيّ — يتم استدعاؤه بطلب صريح أو عند السحب للتحديث
+  /// Real-time stream of wholesaler products for instant updates
+  Stream<List<ProductEntity>> watchWholesalerProducts({
+    required String wholesalerId,
+    bool activeOnly = true,
+  });
+
+  /// Fetches a page of wholesaler products with sorting and pagination
+  /// Non-live query — triggered explicitly or via pull-to-refresh
   Future<ApiResult<ProductsPageResult>> getWholesalerProducts({
     required String wholesalerId,
     int limit = 20,
@@ -57,17 +63,17 @@ abstract class ProductsRepository {
     bool activeOnly = true,
   });
 
-  // ── عمليات التاجر (Retailer Operations) ────────────────────────────────────
+  // ── Retailer Operations ───────────────────────────────────────────────────
 
-  /// جلب صفحة منتجات كتالوج المورد للتاجر المعتمد
-  /// بشرط: wholesalerId == مورد التاجر و isActive == true وترتيب بالاسم
+  /// Fetches a page of wholesaler catalog products for authorized retailer
+  /// Criteria: wholesalerId == retailer's wholesaler && isActive == true sorted by name
   Future<ApiResult<ProductsPageResult>> getRetailerProducts({
     required String wholesalerId,
     int limit = 20,
     dynamic startAfterDocument,
   });
 
-  /// جلب منتج محدد بالمعرف
+  /// Fetches a specific product by its ID
   Future<ApiResult<ProductEntity>> getProductById({
     required String productId,
   });

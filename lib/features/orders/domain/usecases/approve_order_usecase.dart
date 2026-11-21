@@ -4,7 +4,7 @@ import 'package:vatix/core/utils/unit.dart';
 import '../entities/order_entity.dart';
 import '../repositories/orders_repository.dart';
 
-/// معطيات اعتماد أمر الشراء
+/// Parameters for approving a purchase order
 class ApproveOrderParams {
   final OrderEntity order;
   final PaymentType paymentType;
@@ -17,21 +17,21 @@ class ApproveOrderParams {
   });
 }
 
-/// [ApproveOrderUseCase] — حالة استخدام اعتماد أمر الشراء من قِبل المورد (Task 4.5)
+/// [ApproveOrderUseCase] — Use case for approving a purchase order by wholesaler (Task 4.5)
 class ApproveOrderUseCase {
   final OrdersRepository _repository;
 
   ApproveOrderUseCase(this._repository);
 
   Future<ApiResult<Unit>> call(ApproveOrderParams params) async {
-    // 1. التحقق من أن الطلب في حالة pending فقط
+    // 1. Verify that order is in pending status only
     if (params.order.status != OrderStatus.pending) {
       return ApiFailure(
         const ValidationFailure('لا يمكن اعتماد طلب غير معلّق.'),
       );
     }
 
-    // 2. التحقق من هوية المورد
+    // 2. Verify wholesaler identity
     if (params.wholesalerUid.trim().isEmpty ||
         params.wholesalerUid != params.order.wholesalerId) {
       return ApiFailure(
@@ -39,7 +39,7 @@ class ApproveOrderUseCase {
       );
     }
 
-    // 3. التحقق من وجود إجماليات مالية صحيحة
+    // 3. Verify presence of valid financial totals
     if (params.order.totals.isEmpty) {
       return ApiFailure(
         const ValidationFailure('الطلب لا يحتوي على مبالغ أو إجماليات صالحة.'),

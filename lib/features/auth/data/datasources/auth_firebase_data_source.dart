@@ -7,7 +7,7 @@ import 'package:vatix/features/auth/data/models/user_model.dart';
 import 'package:vatix/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:vatix/features/auth/domain/entities/user_entity.dart';
 
-/// تنفيذ DataSource باستخدام Firebase Auth + Firestore
+/// DataSource implementation using Firebase Auth + Firestore
 class AuthFirebaseDataSourceImpl implements AuthRemoteDataSource {
   final FirebaseAuth _firebaseAuth;
   final FirebaseFirestore _firestore;
@@ -18,12 +18,12 @@ class AuthFirebaseDataSourceImpl implements AuthRemoteDataSource {
   })  : _firebaseAuth = firebaseAuth,
         _firestore = firestore;
 
-  // ─── دالة مركزية لتعامل مع الأخطاء ─────────────────────────────────────
+  // ─── Centralized Error Handling Function ─────────────────────────────────
   Future<T> _guard<T>(Future<T> Function() action) async {
     try {
       return await action();
     } on FirebaseAuthException {
-      rethrow; // يُترجَم لرسالة عربية في ApiErrorHandler
+      rethrow; // Translated to an Arabic user message in ApiErrorHandler
     } on FirebaseException {
       rethrow;
     } catch (e) {
@@ -32,7 +32,7 @@ class AuthFirebaseDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
-  // ─── تسجيل الدخول ───────────────────────────────────────────────────────
+  // ─── Sign In ────────────────────────────────────────────────────────────
   @override
   Future<UserModel> signIn({
     required String email,
@@ -56,13 +56,13 @@ class AuthFirebaseDataSourceImpl implements AuthRemoteDataSource {
     });
   }
 
-  // ─── تسجيل الخروج ───────────────────────────────────────────────────────
+  // ─── Sign Out ───────────────────────────────────────────────────────────
   @override
   Future<void> signOut() async {
     await _firebaseAuth.signOut();
   }
 
-  // ─── إعادة تعيين كلمة المرور ────────────────────────────────────────────
+  // ─── Password Reset ─────────────────────────────────────────────────────
   @override
   Future<void> sendPasswordReset(String email) async {
     return _guard(() async {
@@ -70,28 +70,28 @@ class AuthFirebaseDataSourceImpl implements AuthRemoteDataSource {
     });
   }
 
-  // ─── Stream لحالة Auth ──────────────────────────────────────────────────
+  // ─── Auth State Stream ──────────────────────────────────────────────────
   @override
   Stream<User?> watchAuthUser() => _firebaseAuth.authStateChanges();
 
-  // ─── Stream لمستند users/{uid} ──────────────────────────────────────────
+  // ─── users/{uid} Document Stream ────────────────────────────────────────
   @override
   Stream<DocumentSnapshot<Map<String, dynamic>>> watchUserDoc(String uid) {
     return _firestore.collection('users').doc(uid).snapshots();
   }
 
-  // ─── جلب كود الدعوة ─────────────────────────────────────────────────────
+  // ─── Fetch Invite Code ──────────────────────────────────────────────────
   @override
   Future<DocumentSnapshot<Map<String, dynamic>>> getInvite(String code) async {
     return _firestore.collection('invites').doc(code.toUpperCase().trim()).get();
   }
 
-  // ─── تسجيل تاجر جديد ────────────────────────────────────────────────────
-  /// الترتيب الاحترافي:
-  /// 1. التحقق من كود الدعوة أولاً قبل لمس Firebase Auth
-  /// 2. إنشاء حساب Firebase Auth بعد ثبوت صحة الكود
-  /// 3. حفظ بيانات التاجر في مجموعة users
-  /// 4. حذف الحساب فوراً كإجراء تعويضي في حال فشلت كتابة البيانات في users
+  // ─── Register New Retailer ─────────────────────────────────────────────
+  /// Professional flow:
+  /// 1. Verify invite code first before touching Firebase Auth
+  /// 2. Create Firebase Auth account once code validity is confirmed
+  /// 3. Save retailer data in users collection
+  /// 4. Delete account immediately as compensation if writing data to users fails
   @override
   Future<UserModel> registerRetailer({
     required String email,
@@ -112,7 +112,7 @@ class AuthFirebaseDataSourceImpl implements AuthRemoteDataSource {
       debugPrint('VATIX_REGISTER: Checking invite code -> [$cleanInviteCode]');
     }
 
-    // 1. التحقق المسبق من وجود وصلاحية كود الدعوة في Firestore
+    // 1. Pre-verify existence and validity of invite code in Firestore
     final inviteDoc = await _firestore
         .collection('invites')
         .doc(cleanInviteCode)
@@ -146,7 +146,7 @@ class AuthFirebaseDataSourceImpl implements AuthRemoteDataSource {
       );
     }
 
-    // 2. الكود سليم 100% -> إنشاء حساب المستخدم في Firebase Auth
+    // 2. Code is 100% valid -> Create user account in Firebase Auth
     final credential = await _firebaseAuth.createUserWithEmailAndPassword(
       email: email,
       password: password,
@@ -160,7 +160,7 @@ class AuthFirebaseDataSourceImpl implements AuthRemoteDataSource {
     }
 
     try {
-      // 3. كتابة مستند المستخدم في مجموعة users
+      // 3. Write user document in users collection
       final userMap = UserModel.toFirestoreForRegistration(
         uid: uid,
         businessName: businessName,
@@ -178,7 +178,7 @@ class AuthFirebaseDataSourceImpl implements AuthRemoteDataSource {
         debugPrint('VATIX_REGISTER: User document successfully created in users/$uid');
       }
 
-      // 4. بناء الكيان مباشرة دون استهلاك قراءات إضافية
+      // 4. Construct entity directly without consuming additional read operations
       final now = DateTime.now();
       return UserModel(
         id: uid,
@@ -195,7 +195,7 @@ class AuthFirebaseDataSourceImpl implements AuthRemoteDataSource {
         updatedAt: now,
       );
     } catch (e) {
-      // تعويض: حذف حساب Auth في حال فشلت كتابة بيانات users لمنع الحسابات المعلقة
+      // Compensation: Delete Auth account if writing users data fails to prevent dangling accounts
       if (kDebugMode) {
         debugPrint('VATIX_REGISTER: Failed to save user doc, compensating by deleting Auth user: $e');
       }

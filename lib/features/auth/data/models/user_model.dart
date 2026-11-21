@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/user_entity.dart';
 
-/// [UserModel] — نموذج البيانات في طبقة Data.
-/// يمتد من [UserEntity] ويضيف عمليات تحويل Firestore.
+/// [UserModel] — Data layer model.
+/// Extends [UserEntity] and adds Firestore serialization logic.
 class UserModel extends UserEntity {
   const UserModel({
     required super.id,
@@ -21,13 +21,13 @@ class UserModel extends UserEntity {
     required super.updatedAt,
   });
 
-  /// تحويل من [DocumentSnapshot] مباشرة — يستخدم doc.id كمعرّف
+  /// Converts directly from [DocumentSnapshot] — uses doc.id as the identifier
   factory UserModel.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> snapshot,
   ) {
     final data = snapshot.data() ?? {};
     return UserModel(
-      id: snapshot.id, // doc.id دائماً، لا حقل id مكرّر
+      id: snapshot.id, // Always doc.id, no duplicate id field
       role: UserRole.fromString(data['role']?.toString() ?? 'retailer'),
       businessName: data['businessName']?.toString() ?? '',
       ownerName: data['ownerName']?.toString() ?? '',
@@ -46,8 +46,8 @@ class UserModel extends UserEntity {
     );
   }
 
-  /// تحويل إلى Map لكتابة مستند تسجيل التاجر في Firestore
-  /// الحقول الثابتة فقط — لا دور مورد، لا تعديل حالة
+  /// Converts to Map for saving retailer registration document in Firestore
+  /// Fixed fields only — no wholesaler role, no status alteration
   static Map<String, dynamic> toFirestoreForRegistration({
     required String uid,
     required String businessName,

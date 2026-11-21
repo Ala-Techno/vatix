@@ -4,7 +4,7 @@ import 'package:vatix/core/utils/currency.dart';
 import 'package:vatix/core/utils/money_formatter.dart';
 import 'order_item_entity.dart';
 
-/// حالة أمر الشراء في دورة الحياة (Order Status)
+/// Purchase order lifecycle status
 enum OrderStatus {
   pending('pending', 'قيد الانتظار'),
   approved('approved', 'معتمد'),
@@ -53,7 +53,7 @@ enum OrderStatus {
   }
 }
 
-/// طريقة سداد الطلب (Payment Type) — يحددها المورد عند القبول (M4)
+/// Order payment method — specified by wholesaler upon approval (M4)
 enum PaymentType {
   credit('credit', 'آجل (دين)'),
   cash('cash', 'نقد (كاش)');
@@ -72,7 +72,7 @@ enum PaymentType {
   }
 }
 
-/// [OrderEntity] — كيان أمر الشراء الأساسي بين التاجر والمورد
+/// [OrderEntity] — Core purchase order entity between retailer and wholesaler
 class OrderEntity {
   final String id;
   final String retailerId;
@@ -80,13 +80,13 @@ class OrderEntity {
   final String retailerName;
   final String wholesalerName;
   final List<OrderItemEntity> items;
-  final Map<Currency, int> totals; // إجمالي لكل عملة بالـ Subunits
+  final Map<Currency, int> totals; // Total per currency in subunits
   final OrderStatus status;
   final PaymentType? paymentType;
   final String? note;
   final String? rejectionReason;
   final String? assignedDistributorId;
-  final bool hasPendingWrites; // هل الطلب بانتظار المزامنة مع الخادم (Offline E3)
+  final bool hasPendingWrites; // Whether the order is awaiting sync with server (Offline E3)
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? approvedAt;
@@ -112,21 +112,21 @@ class OrderEntity {
     this.deliveredAt,
   });
 
-  /// معرف مختصر ومرتب للعرض في الواجهة (مثال: #A8F2B1)
+  /// Compact formatted ID for UI display (e.g., #A8F2B1)
   String get shortId {
     if (id.length <= 6) return '#${id.toUpperCase()}';
     return '#${id.substring(0, 6).toUpperCase()}';
   }
 
-  /// إجمالي عدد القطع المطلوبة في هذا الطلب
+  /// Total count of items requested in this order
   int get totalItemCount =>
       items.fold(0, (sum, item) => sum + item.quantity);
 
-  /// هل يمكن إلغاء الطلب من قبل التاجر (فقط عندما يكون pending)
+  /// Whether the order can be cancelled by retailer (only when pending)
   bool get canCancel => status == OrderStatus.pending;
 
-  /// سلسلة نصية منسقة لجميع الإجماليات حسب العملات
-  /// مثال: "45,000 ر.ي + 120.00 ر.س"
+  /// Formatted string summary of all totals grouped by currency
+  /// Example: "45,000 YER + 120.00 SAR"
   String get formattedTotalsSummary {
     if (totals.isEmpty) return '0';
     return totals.entries

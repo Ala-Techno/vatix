@@ -5,7 +5,7 @@ import 'package:vatix/core/utils/money_formatter.dart';
 import 'package:vatix/features/shell/retailer_shell.dart';
 import '../../domain/entities/order_entity.dart';
 
-/// [OrderSuccessScreen] — شاشة نجاح إرسال أمر الشراء
+/// [OrderSuccessScreen] — Purchase order success screen
 class OrderSuccessScreen extends StatelessWidget {
   final OrderEntity order;
   final VoidCallback? onViewOrders;
@@ -43,7 +43,7 @@ class OrderSuccessScreen extends StatelessWidget {
                   children: [
                     const SizedBox(height: 12),
 
-                    // 1. أيقونة النجاح الكبيرة
+                    // 1. Large success icon
                     Center(
                       child: Container(
                         width: 90,
@@ -66,7 +66,7 @@ class OrderSuccessScreen extends StatelessWidget {
 
                     const SizedBox(height: 24),
 
-                    // 2. عنوان ورسالة النجاح
+                    // 2. Success title and message
                     const Center(
                       child: Text(
                         'تم إرسال أمر الشراء بنجاح!',
@@ -95,7 +95,7 @@ class OrderSuccessScreen extends StatelessWidget {
 
                     const SizedBox(height: 28),
 
-                    // 3. بطاقة رقم الطلب المختصر مع زر النسخ
+                    // 3. Short order ID card with copy button
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                       decoration: BoxDecoration(
@@ -161,7 +161,7 @@ class OrderSuccessScreen extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
-                    // 4. مؤشر العمل دون اتصال E3 (Offline writes)
+                    // 4. Offline writes indicator E3
                     if (order.hasPendingWrites)
                       Container(
                         padding: const EdgeInsets.all(14),
@@ -213,7 +213,7 @@ class OrderSuccessScreen extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
-                    // 5. بطاقة ملخص الإجماليات
+                    // 5. Totals summary card
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -282,7 +282,7 @@ class OrderSuccessScreen extends StatelessWidget {
                 ),
               ),
 
-              // الأزرار السفلية
+              // Bottom buttons
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
                 child: Column(
@@ -357,7 +357,7 @@ class OrderSuccessScreen extends StatelessWidget {
     if (onViewOrders != null) {
       onViewOrders!();
     } else {
-      // الانتقال إلى تبويب «طلباتي» في الواجهة الرئيسية
+      // Navigate to "My Orders" tab in main shell
       RetailerShell.switchTab(2);
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
@@ -367,7 +367,7 @@ class OrderSuccessScreen extends StatelessWidget {
     if (onBackToCatalog != null) {
       onBackToCatalog!();
     } else {
-      // الانتقال إلى تبويب «الكتالوج» في الواجهة الرئيسية
+      // Navigate to "Catalog" tab in main shell
       RetailerShell.switchTab(0);
       Navigator.of(context).popUntil((route) => route.isFirst);
     }

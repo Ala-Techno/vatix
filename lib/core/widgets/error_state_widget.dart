@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-/// [ErrorStateWidget] — مكوّن عرض حالة الخطأ مع خيار إعادة المحاولة
+/// [ErrorStateWidget] — Error state display widget with retry option
 class ErrorStateWidget extends StatelessWidget {
   final String title;
   final String message;

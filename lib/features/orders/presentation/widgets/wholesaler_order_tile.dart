@@ -3,7 +3,7 @@ import 'package:vatix/core/theme/app_colors.dart';
 import 'package:vatix/core/utils/money_formatter.dart';
 import '../../domain/entities/order_entity.dart';
 
-/// [WholesalerOrderTile] — بطاقة عرض أمر الشراء في قائمة طلبات المورد
+/// [WholesalerOrderTile] — Card displaying a purchase order in the wholesaler's orders list
 class WholesalerOrderTile extends StatelessWidget {
   final OrderEntity order;
   final VoidCallback onTap;
@@ -43,7 +43,7 @@ class WholesalerOrderTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. رأس البطاقة: اسم التاجر + شارة الحالة
+                // 1. Card header: retailer name + status badge
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -102,11 +102,11 @@ class WholesalerOrderTile extends StatelessWidget {
                 const Divider(height: 1),
                 const SizedBox(height: 10),
 
-                // 2. تفاصيل الأصناف والكميات + الإجماليات لكل عملة
+                // 2. Item details, quantities, and per-currency totals
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // عدد الأصناف والوقت
+                    // Item count and timestamp
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,7 +132,7 @@ class WholesalerOrderTile extends StatelessWidget {
                       ),
                     ),
 
-                    // إجماليات العملات
+                    // Currency totals
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: order.totals.entries.map((entry) {

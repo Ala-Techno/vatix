@@ -1,24 +1,24 @@
 import 'package:vatix/core/utils/currency.dart';
 import 'package:vatix/core/utils/money_formatter.dart';
 
-/// [ProductEntity] — كيان المنتج في نظام Vatix وفق المعيار §4.4
-/// القواعد الصارمة:
-/// 1. السعر [price] يُخزَّن دائماً كـ int بأصغر وحدة (Subunits) للعملة.
-/// 2. العملة [currency] واحدة من 3 عملات فقط: YER, SAR, USD.
-/// 3. الحذف ناعم [isActive]: عند حذفه يصبح false ويختفي من القوائم.
-/// 4. التوفر [isAvailable]: إمكانية الطلب من قِبل التجار.
+/// [ProductEntity] — Product entity in Vatix system per standard §4.4
+/// Strict rules:
+/// 1. Price [price] is always stored as int in the smallest currency unit (Subunits).
+/// 2. Currency [currency] is strictly one of 3 currencies: YER, SAR, USD.
+/// 3. Soft deletion [isActive]: when deleted, becomes false and hidden from lists.
+/// 4. Availability [isAvailable]: orderability by retailers.
 class ProductEntity {
   final String id;
   final String wholesalerId;
   final String name;
   final String? description;
-  final int price; // بأصغر وحدة نقدية (subunits)
+  final int price; // In smallest currency unit (subunits)
   final Currency currency;
-  final String unit; // كرتون، حبة، باكت، كيس، كجم...
+  final String unit; // Carton, piece, packet, bag, kg...
   final String? category;
   final String? imageUrl;
   final String? sku;
-  final int? stockQuantity; // كمية العرض فقط (اختيارية)
+  final int? stockQuantity; // Display quantity only (optional)
   final bool isAvailable;
   final bool isActive;
   final DateTime createdAt;
@@ -42,10 +42,10 @@ class ProductEntity {
     required this.updatedAt,
   });
 
-  /// تنسيق سعر المنتج مع رمز العملة للعرض في الواجهة
+  /// Formatted product price with currency symbol for UI display
   String get formattedPrice => MoneyFormatter.format(price, currency);
 
-  /// هل المنتج غير متاح حالياً للطلب؟
+  /// Whether the product is currently unavailable for order
   bool get isUnavailable => !isAvailable;
 
   ProductEntity copyWith({
@@ -95,7 +95,7 @@ class ProductEntity {
   int get hashCode => id.hashCode;
 }
 
-/// نتيجة صفحة المنتجات مع المؤشر للصفحة التالية (Pagination)
+/// Products page result with cursor for subsequent page (Pagination)
 class ProductsPageResult {
   final List<ProductEntity> products;
   final dynamic lastDocument; // DocumentSnapshot<Map<String, dynamic>>?

@@ -2,31 +2,31 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 
-/// عقد DataSource للمصادقة عبر Firebase
+/// DataSource contract for authentication via Firebase
 abstract class AuthRemoteDataSource {
-  /// تسجيل الدخول بالبريد وكلمة المرور
+  /// Sign in with email and password
   Future<UserModel> signIn({
     required String email,
     required String password,
   });
 
-  /// تسجيل الخروج
+  /// Sign out
   Future<void> signOut();
 
-  /// إرسال رابط إعادة تعيين كلمة المرور
+  /// Send password reset link
   Future<void> sendPasswordReset(String email);
 
-  /// Stream للمستخدم الحالي من FirebaseAuth
+  /// Stream of current user from FirebaseAuth
   Stream<User?> watchAuthUser();
 
-  /// Stream لمستند users/{uid} من Firestore
+  /// Stream of users/{uid} document from Firestore
   Stream<DocumentSnapshot<Map<String, dynamic>>> watchUserDoc(String uid);
 
-  /// جلب مستند كود الدعوة
+  /// Fetch invite code document
   Future<DocumentSnapshot<Map<String, dynamic>>> getInvite(String code);
 
-  /// تسجيل تاجر جديد:
-  /// إنشاء Auth ← التحقق من الكود ← كتابة users (أو حذف Auth عند الفشل)
+  /// Register a new retailer:
+  /// Create Auth -> Verify code -> Write users doc (or rollback Auth on failure)
   Future<UserModel> registerRetailer({
     required String email,
     required String password,

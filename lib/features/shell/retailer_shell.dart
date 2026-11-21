@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:vatix/core/di/dependency_injection.dart';
 import 'package:vatix/core/theme/app_colors.dart';
 import 'package:vatix/core/widgets/confirmation_dialog.dart';
 import 'package:vatix/core/widgets/modern_bottom_nav_bar.dart';
+import 'package:vatix/core/widgets/vatix_premium_app_bar.dart';
 import 'package:vatix/features/auth/presentation/providers/auth_provider.dart';
 import 'package:vatix/features/cart/presentation/providers/cart_provider.dart';
 import 'package:vatix/features/cart/presentation/screens/cart_screen.dart';
 import 'package:vatix/features/customers/presentation/providers/customers_provider.dart';
 import 'package:vatix/features/customers/presentation/screens/customers_screen.dart';
+import 'package:vatix/features/orders/presentation/providers/retailer_orders_provider.dart';
 import 'package:vatix/features/orders/presentation/providers/wholesaler_orders_provider.dart';
 import 'package:vatix/features/orders/presentation/screens/checkout_screen.dart';
 import 'package:vatix/features/orders/presentation/screens/retailer_orders_screen.dart';
@@ -24,14 +27,14 @@ import 'package:vatix/features/ledger/presentation/providers/wholesaler_ledger_p
 import 'package:vatix/features/ledger/presentation/screens/wholesaler_ledger_screen.dart';
 
 // ═════════════════════════════════════════════════════════════════════════════
-// 1. RETAILER SHELL (هيكل واجهة تاجر التجزئة)
+// 1. RETAILER SHELL
 // ═════════════════════════════════════════════════════════════════════════════
 
-/// [RetailerShell] — يوفر الـ Providers اللازمة ويفوّض لـ [_RetailerShellContent]
+/// [RetailerShell] — Provides necessary providers and delegates to [_RetailerShellContent]
 class RetailerShell extends StatefulWidget {
   const RetailerShell({super.key});
 
-  /// متحكم عام لتغيير التبويب النشط لواجهة التاجر من أي شاشة
+  /// Global notifier to switch active retailer tab from any screen
   static final ValueNotifier<int> activeTabNotifier = ValueNotifier<int>(0);
 
   static void switchTab(int index) {
@@ -68,12 +71,20 @@ class _RetailerShellContent extends StatefulWidget {
 
 class _RetailerShellContentState extends State<_RetailerShellContent> {
   int _currentIndex = 0;
+  DateTime? _lastBackPressTime;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = RetailerShell.activeTabNotifier.value;
     RetailerShell.activeTabNotifier.addListener(_handleTabChange);
+    // Start retailer orders stream upon shell load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = context.read<AuthProvider>().user;
+      if (user != null) {
+        context.read<RetailerOrdersProvider>().startListening(user.id);
+      }
+    });
   }
 
   @override
@@ -85,6 +96,68 @@ class _RetailerShellContentState extends State<_RetailerShellContent> {
   void _handleTabChange() {
     if (mounted && _currentIndex != RetailerShell.activeTabNotifier.value) {
       setState(() => _currentIndex = RetailerShell.activeTabNotifier.value);
+      if (_currentIndex == 2) {
+        final user = context.read<AuthProvider>().user;
+        if (user != null) {
+          context.read<RetailerOrdersProvider>().startListening(user.id);
+        }
+      }
+    }
+  }
+
+  Future<void> _handleBackPress() async {
+    // 1. If not at first screen (index 0), navigate to first tab
+    if (_currentIndex != 0) {
+      RetailerShell.switchTab(0);
+      return;
+    }
+
+    // 2. If already at first screen (index 0)
+    final now = DateTime.now();
+    if (_lastBackPressTime == null ||
+        now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+      _lastBackPressTime = now;
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.touch_app_outlined, color: Colors.white, size: 19),
+                SizedBox(width: 8),
+                Text(
+                  'اضغط مرة أخرى لتأكيد الخروج من التطبيق',
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF1E293B).withValues(alpha: 0.95),
+            behavior: SnackBarBehavior.floating,
+            elevation: 4,
+            margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } else {
+      // Pressed twice within 2 seconds — show premium confirmation dialog
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      }
+      _lastBackPressTime = null;
+      final shouldExit = await showAppExitDialog(context);
+      if (shouldExit == true) {
+        await SystemNavigator.pop();
+      }
     }
   }
 
@@ -122,67 +195,36 @@ class _RetailerShellContentState extends State<_RetailerShellContent> {
       const RetailerAccountScreen(),
     ];
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  user?.businessName.isNotEmpty == true
-                      ? user!.businessName
-                      : 'منشأة التجزئة',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLight.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    'تاجر',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primaryLight,
-                      fontFamily: 'Cairo',
-                    ),
-                  ),
-                ),
-              ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _handleBackPress();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: VatixPremiumAppBar(
+          title: user?.businessName.isNotEmpty == true
+              ? user!.businessName
+              : 'منشأة التجزئة',
+          subtitle: user?.ownerName.isNotEmpty == true ? user!.ownerName : null,
+          roleBadge: 'تاجر',
+          roleBadgeColor: AppColors.primaryLight,
+          actions: [
+            IconButton(
+              tooltip: 'تسجيل الخروج',
+              icon: const Icon(Icons.logout_rounded, size: 21, color: AppColors.textSecondary),
+              onPressed: () => _confirmLogout(context),
             ),
-            if (user?.ownerName.isNotEmpty == true)
-              Text(
-                user!.ownerName,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
-              ),
           ],
         ),
-        actions: [
-          IconButton(
-            tooltip: 'تسجيل الخروج',
-            icon: const Icon(Icons.logout_rounded, size: 22),
-            onPressed: () => _confirmLogout(context),
-          ),
-        ],
-      ),
-      body: IndexedStack(index: _currentIndex, children: screens),
-      bottomNavigationBar: ModernBottomNavBar(
-        currentIndex: _currentIndex,
-        items: items,
-        onTap: (i) => RetailerShell.switchTab(i),
+        body: IndexedStack(index: _currentIndex, children: screens),
+        bottomNavigationBar: ModernBottomNavBar(
+          currentIndex: _currentIndex,
+          items: items,
+          onTap: (i) => RetailerShell.switchTab(i),
+        ),
       ),
     );
   }
@@ -196,13 +238,16 @@ class _RetailerShellContentState extends State<_RetailerShellContent> {
       confirmColor: AppColors.statusBlocked,
     );
     if (confirm == true && context.mounted) {
+      try {
+        context.read<RetailerOrdersProvider>().reset();
+      } catch (_) {}
       context.read<AuthProvider>().logout();
     }
   }
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// 2. WHOLESALER SHELL (هيكل واجهة المورد)
+// 2. WHOLESALER SHELL
 // ═════════════════════════════════════════════════════════════════════════════
 
 class WholesalerShell extends StatelessWidget {
@@ -239,6 +284,7 @@ class _WholesalerShellContent extends StatefulWidget {
 
 class _WholesalerShellContentState extends State<_WholesalerShellContent> {
   int _currentIndex = 0;
+  DateTime? _lastBackPressTime;
 
   @override
   void initState() {
@@ -247,8 +293,67 @@ class _WholesalerShellContentState extends State<_WholesalerShellContent> {
       final user = context.read<AuthProvider>().user;
       if (user != null) {
         context.read<WholesalerOrdersProvider>().init(user.id);
+        context.read<WholesalerProductsProvider>().startListening(
+              wholesalerId: user.id,
+            );
       }
     });
+  }
+
+  Future<void> _handleBackPress() async {
+    // 1. If wholesaler is not at dashboard (index 0), navigate back to index 0
+    if (_currentIndex != 0) {
+      setState(() => _currentIndex = 0);
+      return;
+    }
+
+    // 2. If already at dashboard (index 0)
+    final now = DateTime.now();
+    if (_lastBackPressTime == null ||
+        now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+      _lastBackPressTime = now;
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.touch_app_outlined, color: Colors.white, size: 19),
+                SizedBox(width: 8),
+                Text(
+                  'اضغط مرة أخرى لتأكيد الخروج من التطبيق',
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF1E293B).withValues(alpha: 0.95),
+            behavior: SnackBarBehavior.floating,
+            elevation: 4,
+            margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } else {
+      // Pressed twice within 2 seconds — show premium confirmation dialog
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      }
+      _lastBackPressTime = null;
+      final shouldExit = await showAppExitDialog(context);
+      if (shouldExit == true) {
+        await SystemNavigator.pop();
+      }
+    }
   }
 
   @override
@@ -284,67 +389,36 @@ class _WholesalerShellContentState extends State<_WholesalerShellContent> {
       const BottomNavItem(icon: Icons.book_rounded, label: 'الدفتر'),
     ];
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  user?.businessName.isNotEmpty == true
-                      ? user!.businessName
-                      : 'لوحة المورد',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    'مورد',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.secondary,
-                      fontFamily: 'Cairo',
-                    ),
-                  ),
-                ),
-              ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _handleBackPress();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: VatixPremiumAppBar(
+          title: user?.businessName.isNotEmpty == true
+              ? user!.businessName
+              : 'لوحة المورد',
+          subtitle: user?.ownerName.isNotEmpty == true ? user!.ownerName : null,
+          roleBadge: 'مورد',
+          roleBadgeColor: AppColors.secondary,
+          actions: [
+            IconButton(
+              tooltip: 'تسجيل الخروج',
+              icon: const Icon(Icons.logout_rounded, size: 21, color: AppColors.textSecondary),
+              onPressed: () => _confirmLogout(context),
             ),
-            if (user?.ownerName.isNotEmpty == true)
-              Text(
-                user!.ownerName,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
-              ),
           ],
         ),
-        actions: [
-          IconButton(
-            tooltip: 'تسجيل الخروج',
-            icon: const Icon(Icons.logout_rounded, size: 22),
-            onPressed: () => _confirmLogout(context),
-          ),
-        ],
-      ),
-      body: IndexedStack(index: _currentIndex, children: screens),
-      bottomNavigationBar: ModernBottomNavBar(
-        currentIndex: _currentIndex,
-        items: items,
-        onTap: (i) => setState(() => _currentIndex = i),
+        body: IndexedStack(index: _currentIndex, children: screens),
+        bottomNavigationBar: ModernBottomNavBar(
+          currentIndex: _currentIndex,
+          items: items,
+          onTap: (i) => setState(() => _currentIndex = i),
+        ),
       ),
     );
   }
@@ -358,6 +432,9 @@ class _WholesalerShellContentState extends State<_WholesalerShellContent> {
       confirmColor: AppColors.statusBlocked,
     );
     if (confirm == true && context.mounted) {
+      try {
+        context.read<RetailerOrdersProvider>().reset();
+      } catch (_) {}
       context.read<AuthProvider>().logout();
     }
   }

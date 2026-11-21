@@ -3,12 +3,13 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:vatix/core/theme/app_colors.dart';
 import 'package:vatix/core/widgets/empty_state_widget.dart';
+import 'package:vatix/core/widgets/error_state_widget.dart';
 import 'package:vatix/features/auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/order_entity.dart';
 import '../providers/retailer_orders_provider.dart';
 import 'order_details_screen.dart';
 
-/// [RetailerOrdersScreen] — شاشة قائمة طلبات التاجر المحدثة لحظياً
+/// [RetailerOrdersScreen] — Retailer orders list screen with real-time updates
 class RetailerOrdersScreen extends StatefulWidget {
   final VoidCallback? onBrowseCatalog;
 
@@ -28,7 +29,7 @@ class _RetailerOrdersScreenState extends State<RetailerOrdersScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = context.read<AuthProvider>().user;
       if (user != null) {
-        context.read<RetailerOrdersProvider>().startListening(user.id);
+        context.read<RetailerOrdersProvider>().startListening(user.id, force: true);
       }
     });
   }
@@ -40,6 +41,18 @@ class _RetailerOrdersScreenState extends State<RetailerOrdersScreen> {
     if (provider.isLoading && !provider.hasOrders) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primaryLight),
+      );
+    }
+
+    if (provider.errorMessage != null && !provider.hasOrders) {
+      return ErrorStateWidget(
+        message: provider.errorMessage!,
+        onRetry: () {
+          final user = context.read<AuthProvider>().user;
+          if (user != null) {
+            provider.startListening(user.id, force: true);
+          }
+        },
       );
     }
 
@@ -58,17 +71,18 @@ class _RetailerOrdersScreenState extends State<RetailerOrdersScreen> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        final user = context.read<AuthProvider>().user;
-        if (user != null) {
-          provider.startListening(user.id);
-        }
+        await provider.refreshOrders();
       },
       child: ListView.builder(
+        key: ValueKey('orders_${provider.orders.map((o) => '${o.id}_${o.status.name}').join(',')}'),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         itemCount: provider.orders.length,
         itemBuilder: (context, index) {
           final order = provider.orders[index];
-          return _buildOrderCard(context, order, dateFormat);
+          return KeyedSubtree(
+            key: ValueKey('${order.id}_${order.status.name}'),
+            child: _buildOrderCard(context, order, dateFormat),
+          );
         },
       ),
     );
@@ -102,7 +116,7 @@ class _RetailerOrdersScreenState extends State<RetailerOrdersScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. السطر العلوي: رقم الطلب + التاريخ + شارة الحالة
+              // 1. Top row: Order short ID + date + status badge
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -174,7 +188,7 @@ class _RetailerOrdersScreenState extends State<RetailerOrdersScreen> {
 
               const SizedBox(height: 6),
 
-              // تاريخ الطلب
+              // Order date
               Text(
                 formattedDate,
                 style: const TextStyle(
@@ -188,7 +202,7 @@ class _RetailerOrdersScreenState extends State<RetailerOrdersScreen> {
               const Divider(height: 1),
               const SizedBox(height: 10),
 
-              // 2. محتوى الطلب (المورد + عدد الأصناف)
+              // 2. Order content (wholesaler + item count)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -211,7 +225,7 @@ class _RetailerOrdersScreenState extends State<RetailerOrdersScreen> {
                 ],
               ),
 
-              // معاينة سريعة لأسماء الأصناف
+              // Quick preview of item names
               if (order.items.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(
@@ -229,7 +243,7 @@ class _RetailerOrdersScreenState extends State<RetailerOrdersScreen> {
 
               const SizedBox(height: 12),
 
-              // 3. السطر السفلي: الإجمالي + زر تفاصيل
+              // 3. Bottom row: Total + details button
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

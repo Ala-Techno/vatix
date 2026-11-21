@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vatix/core/theme/app_colors.dart';
 import 'package:vatix/features/auth/presentation/providers/auth_provider.dart';
 
-/// [RegisterRetailerScreen] — شاشة تسجيل التاجر بكود الدعوة — Material 3 B2B
+/// [RegisterRetailerScreen] — Retailer registration with invite code — Material 3 B2B
 class RegisterRetailerScreen extends StatefulWidget {
   const RegisterRetailerScreen({super.key});
 
@@ -103,11 +104,11 @@ class _RegisterRetailerScreenState extends State<RegisterRetailerScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ── بطاقة كود الدعوة أولاً لأهميته القصوى ──
+                // ── Invite code section first for high priority ──
                 _buildInviteCodeSection(),
                 const SizedBox(height: 20),
 
-                // ── بطاقة بيانات المنشأة ────────────────
+                // ── Business and owner info card ────────────────
                 _buildCardSection(
                   title: 'بيانات المنشأة والمالك',
                   icon: Icons.storefront_rounded,
@@ -158,7 +159,7 @@ class _RegisterRetailerScreenState extends State<RegisterRetailerScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // ── بطاقة بيانات الحساب ──────────────────
+                // ── Login credentials card ──────────────────
                 _buildCardSection(
                   title: 'بيانات تسجيل الدخول',
                   icon: Icons.lock_person_rounded,
@@ -253,7 +254,7 @@ class _RegisterRetailerScreenState extends State<RegisterRetailerScreen> {
                 ),
                 const SizedBox(height: 28),
 
-                // زر إنشاء الحساب
+                // Create account button
                 Consumer<AuthProvider>(
                   builder: (_, provider, __) => SizedBox(
                     height: 52,
@@ -382,7 +383,222 @@ class _RegisterRetailerScreenState extends State<RegisterRetailerScreen> {
               return null;
             },
           ),
+          const SizedBox(height: 12),
+          // Button to request invite code from wholesaler
+          InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: _showRequestCodeBottomSheet,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.statusPendingBg,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: AppColors.statusPending.withValues(alpha: 0.3),
+                ),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.contact_support_outlined,
+                    size: 16,
+                    color: AppColors.statusPending,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'ليس لديك كود؟ اطلب كود الدعوة من المورد',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'Cairo',
+                      color: AppColors.statusPending,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  void _showRequestCodeBottomSheet() {
+    final phoneController = TextEditingController(text: _phoneController.text);
+    final storeController = TextEditingController(text: _businessNameController.text);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.vpn_key_rounded,
+                    color: AppColors.primaryLight,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'طلب كود انضمام من المورد',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          fontFamily: 'Cairo',
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      Text(
+                        'تواصل مباشرة مع المورد المعتمد للحصول على كود الدعوة',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                          fontFamily: 'Cairo',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: storeController,
+              decoration: const InputDecoration(
+                labelText: 'اسم منشأتك أو متجرك',
+                prefixIcon: Icon(Icons.storefront_rounded),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: phoneController,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'رقم هاتفك للتواصل',
+                prefixIcon: Icon(Icons.phone_outlined),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () async {
+                final store = storeController.text.trim();
+                final phone = phoneController.text.trim();
+
+                final storeName = store.isNotEmpty ? store : 'متجر تجزئة';
+                final contactPhone = phone.isNotEmpty ? phone : 'غير محدد';
+
+                // Prepare structured WhatsApp request message
+                final message = '''
+السلام عليكم ورحمة الله وبركاته،
+عزيزي المورد المعتمد،
+
+أود الانضمام إلى شبكتكم التجارية والبدء بإرسال طلبات الشراء عبر تطبيق *Vatix*.
+
+📋 *بيانات المنشأة:*
+• اسم المتجر: $storeName
+• رقم التواصل: $contactPhone
+
+يرجى التكرم بتزويدي بـ *كود الدعوة* الخاص بكم لإتمام التسجيل.
+شاكرين ومقدّرين حسن تعاونكم.
+'''.trim();
+                
+                final encodedText = Uri.encodeComponent(message);
+
+                // 1. Direct custom scheme for WhatsApp app
+                final whatsappAppUri = Uri.parse('whatsapp://send?text=$encodedText');
+                // 2. Web fallback link
+                final whatsappWebUri = Uri.parse('https://api.whatsapp.com/send?text=$encodedText');
+
+                bool launched = false;
+
+                // 1. Attempt direct custom scheme without canLaunchUrl to bypass Android 11+ package queries limitation
+                try {
+                  launched = await launchUrl(
+                    whatsappAppUri,
+                    mode: LaunchMode.externalApplication,
+                  );
+                } catch (_) {}
+
+                // 2. If scheme fails, open via external web link
+                if (!launched) {
+                  try {
+                    launched = await launchUrl(
+                      whatsappWebUri,
+                      mode: LaunchMode.externalNonBrowserApplication,
+                    );
+                  } catch (_) {}
+                }
+
+                if (!launched) {
+                  try {
+                    launched = await launchUrl(
+                      whatsappWebUri,
+                      mode: LaunchMode.externalApplication,
+                    );
+                  } catch (_) {}
+                }
+
+                if (!launched) {
+                  // Fallback: Copy message to clipboard if launching fails
+                  Clipboard.setData(ClipboardData(text: message));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'تعذر فتح تطبيق واتساب. تم نسخ نص الرسالة إلى الحافظة.',
+                          style: TextStyle(fontFamily: 'Cairo'),
+                        ),
+                        backgroundColor: AppColors.statusBlocked,
+                      ),
+                    );
+                  }
+                }
+
+                if (ctx.mounted) {
+                  Navigator.of(ctx).pop();
+                }
+              },
+              icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+              label: const Text(
+                'فتح واتساب وإرسال الطلب للمورد',
+                style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF25D366), // لون واتساب الرسمي
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -454,7 +670,7 @@ class _RegisterRetailerScreenState extends State<RegisterRetailerScreen> {
   }
 }
 
-/// محوّل إدخال — يجعل كود الدعوة دائماً بأحرف كبيرة
+/// Input formatter — forces invite code characters to uppercase
 class _UpperCaseTextFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(

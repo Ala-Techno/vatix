@@ -6,8 +6,8 @@ import 'package:vatix/core/widgets/confirmation_dialog.dart';
 import '../../domain/entities/customer_entity.dart';
 import '../providers/customers_provider.dart';
 
-/// [CustomerCard] — بطاقة عرض بيانات التاجر والإجراءات وفق إرشادات Material 3
-/// معالجة هندسية دقيقة للمساحات لمنع أي RenderFlex Overflow مهما كانت دقة الشاشة
+/// [CustomerCard] — Displays retailer data and actions following Material 3 guidelines.
+/// Space-constrained layout designed to prevent RenderFlex overflow.
 class CustomerCard extends StatelessWidget {
   final CustomerEntity customer;
 
@@ -35,7 +35,7 @@ class CustomerCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── رأس البطاقة: الأيقونة، الاسم، الشارة ─────────────────
+          // ── Card Header: Icon, Name, Badge ─────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
             child: Row(
@@ -93,12 +93,12 @@ class CustomerCard extends StatelessWidget {
 
           const Divider(height: 1),
 
-          // ── بيانات الاتصال والمدينة (توزيع مساحة مرن ومحمي) ───────
+          // ── Contact Info & City (Flexible layout) ───────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             child: Row(
               children: [
-                // جهة الهاتف مع زر النسخ السريع
+                // Phone section with quick copy button
                 Expanded(
                   flex: 3,
                   child: InkWell(
@@ -139,7 +139,7 @@ class CustomerCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // جهة المدينة
+                // City section
                 Expanded(
                   flex: 2,
                   child: Row(
@@ -172,7 +172,7 @@ class CustomerCard extends StatelessWidget {
             ),
           ),
 
-          // ── أزرار الإجراءات مع حماية تامة من التجاوز ──────────────
+          // ── Action Buttons ──────────────
           if (customer.isPending || customer.isActive || customer.isBlocked) ...[
             const Divider(height: 1),
             Padding(
@@ -192,7 +192,7 @@ class CustomerCard extends StatelessWidget {
     if (customer.isPending) {
       return Row(
         children: [
-          // زر القبول
+          // Accept button
           Expanded(
             flex: 3,
             child: SizedBox(
@@ -246,7 +246,7 @@ class CustomerCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          // زر الرفض
+          // Reject button
           Expanded(
             flex: 2,
             child: SizedBox(
@@ -441,7 +441,7 @@ class CustomerCard extends StatelessWidget {
   }
 }
 
-/// [StatusBadge] — شارة حالة التاجر وفق ألوان النظام
+/// [_StatusBadge] — Retailer status badge styled with system colors.
 class _StatusBadge extends StatelessWidget {
   final CustomerEntity customer;
 

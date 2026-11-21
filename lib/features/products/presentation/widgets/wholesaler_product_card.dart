@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vatix/core/theme/app_colors.dart';
 import 'package:vatix/core/widgets/confirmation_dialog.dart';
+import 'package:vatix/core/widgets/vatix_product_image.dart';
 import '../../domain/entities/product_entity.dart';
 import '../providers/wholesaler_products_provider.dart';
 import '../screens/add_edit_product_screen.dart';
 
-/// [WholesalerProductCard] — بطاقة عرض منتج المورد في لوحة التحكم
-/// تدعم: التبديل السريع لتوفر المنتج، زر التعديل، والحذف الناعم مع التأكيد
+/// [WholesalerProductCard] — Wholesaler product card widget in dashboard
+/// Supports: quick toggle for availability, edit button, and soft delete with confirmation
 class WholesalerProductCard extends StatelessWidget {
   final ProductEntity product;
 
@@ -34,34 +35,24 @@ class WholesalerProductCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── القسم العلوي: أيقونة/صورة المنتج، الاسم، السعر، وقائمة الإجراءات ──
+          // ── Top section: Product icon/image, name, price, action menu ──
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 10, 8),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // مربع الأيقونة أو الصورة
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: product.isAvailable
-                        ? AppColors.primaryLight.withValues(alpha: 0.08)
-                        : AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.borderSubtle),
-                  ),
-                  child: Icon(
-                    Icons.inventory_2_rounded,
-                    size: 26,
-                    color: product.isAvailable
-                        ? AppColors.primaryLight
-                        : AppColors.textHint,
-                  ),
+                // Product icon or image box
+                VatixProductImage(
+                  imageUrl: product.imageUrl,
+                  width: 52,
+                  height: 52,
+                  radius: 12,
+                  fit: BoxFit.cover,
+                  isAvailable: product.isAvailable,
                 ),
                 const SizedBox(width: 12),
 
-                // اسم المنتج وبياناته
+                // Product name and details
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,7 +71,7 @@ class WholesalerProductCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 3),
-                      // شارات الوحدة، الصنف، والـ SKU
+                      // Unit, category, and SKU badges
                       Wrap(
                         spacing: 6,
                         runSpacing: 4,
@@ -96,7 +87,7 @@ class WholesalerProductCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      // السعر المنسق بأصغر وحدة نقدية
+                      // Formatted price in smallest currency unit
                       Text(
                         product.formattedPrice,
                         style: TextStyle(
@@ -112,7 +103,7 @@ class WholesalerProductCard extends StatelessWidget {
                   ),
                 ),
 
-                // زر القائمة المنبثقة (تعديل / حذف)
+                // Popup menu button (edit / delete)
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert_rounded,
                       size: 20, color: AppColors.textSecondary),
@@ -164,12 +155,12 @@ class WholesalerProductCard extends StatelessWidget {
 
           const Divider(height: 1),
 
-          // ── شريط التوفر السريع والمخزون ──────────────────────────
+          // ── Quick availability and stock bar ────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             child: Row(
               children: [
-                // كمية المخزون (إن وجدت)
+                // Stock quantity (if present)
                 if (product.stockQuantity != null) ...[
                   Icon(
                     Icons.layers_outlined,
@@ -203,7 +194,7 @@ class WholesalerProductCard extends StatelessWidget {
                 ],
                 const Spacer(),
 
-                // مفتاح التوفر السريع (isAvailable)
+                // Quick availability toggle (isAvailable)
                 Text(
                   product.isAvailable ? 'متاح للطلب' : 'معطّل مؤقتاً',
                   style: TextStyle(

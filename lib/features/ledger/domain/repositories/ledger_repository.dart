@@ -5,7 +5,7 @@ import '../entities/account_entity.dart';
 import '../entities/ledger_entry_entity.dart';
 import '../usecases/reconcile_ledger_use_case.dart';
 
-/// [LedgerStatementPageResult] — نتيجة صفحة كشف الحساب مع دعم الـ Pagination
+/// [LedgerStatementPageResult] — Paginated ledger statement result
 class LedgerStatementPageResult {
   final List<LedgerEntryEntity> entries;
   final dynamic lastDocument;
@@ -18,17 +18,17 @@ class LedgerStatementPageResult {
   });
 }
 
-/// [LedgerRepository] — عقد إدارة دفتر الأستاذ والأرصدة والسداد
+/// [LedgerRepository] — Contract for ledger accounts, statements, and payments
 abstract class LedgerRepository {
   // ─── Wholesaler Methods ──────────────────────────────────────────────────
 
-  /// استماع حيّ لأرصدة جميع عملاء الجملة (بحد أقصى 100 عميل)
+  /// Real-time stream for all wholesaler client accounts (up to limit)
   Stream<List<AccountEntity>> watchAccounts({
     required String wholesalerId,
     int limit = 100,
   });
 
-  /// كشف حساب تاجر معين بصفحات (الأحدث أولاً، مع إمكانية التصفية بالعملة)
+  /// Paginated statement for a specific retailer (newest first, optional currency filter)
   Future<ApiResult<LedgerStatementPageResult>> getStatement({
     required String wholesalerId,
     required String retailerId,
@@ -39,13 +39,13 @@ abstract class LedgerRepository {
 
   // ─── Retailer Methods ────────────────────────────────────────────────────
 
-  /// استماع حيّ لحساب ورصيد التاجر مع مورد محدد
+  /// Real-time stream for retailer account and balance with specific wholesaler
   Stream<AccountEntity?> watchMyAccount({
     required String wholesalerId,
     required String retailerId,
   });
 
-  /// كشف حركات التاجر الخاصة بصفحات
+  /// Paginated statement for the retailer's own transactions
   Future<ApiResult<LedgerStatementPageResult>> getMyStatement({
     required String wholesalerId,
     required String retailerId,
@@ -56,13 +56,13 @@ abstract class LedgerRepository {
 
   // ─── Shared / Actions ────────────────────────────────────────────────────
 
-  /// استماع مباشر لحساب تاجر محدد (يستخدمه المورد والتاجر)
+  /// Real-time stream for specific retailer account (used by both sides)
   Stream<AccountEntity?> watchAccount({
     required String wholesalerId,
     required String retailerId,
   });
 
-  /// تسجيل سداد نقدي/حوالة/شيك وتحديث الرصيد ذرياً (WriteBatch)
+  /// Records cash/transfer/check payment and atomically updates account balance (WriteBatch)
   Future<ApiResult<Unit>> recordPayment({
     required String wholesalerId,
     required String retailerId,
@@ -75,7 +75,7 @@ abstract class LedgerRepository {
     required String createdBy,
   });
 
-  /// مطابقة القيود مع الرصيد المسجل (للتطوير فقط Task 5.7)
+  /// Reconciles ledger entries against account balance (debug only, Task 5.7)
   Future<ApiResult<ReconciliationReport>> reconcileAccount({
     required String wholesalerId,
     required String retailerId,
@@ -83,4 +83,3 @@ abstract class LedgerRepository {
     required Map<Currency, int> accountBalances,
   });
 }
-

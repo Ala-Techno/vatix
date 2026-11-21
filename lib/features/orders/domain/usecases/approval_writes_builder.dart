@@ -1,11 +1,11 @@
 import '../entities/order_entity.dart';
 
-/// تمثيل قيد محاسبي في الـ Ledger ناتج عن اعتماد الطلب
+/// Representation of a ledger entry resulting from order approval
 class LedgerEntryApprovalPlan {
-  final String docId; // المعرف الحتمي: debt_{orderId}_{CUR} أو pay_{orderId}_{CUR}
+  final String docId; // Deterministic ID: debt_{orderId}_{CUR} or pay_{orderId}_{CUR}
   final String wholesalerId;
   final String retailerId;
-  final String type; // 'DEBT' أو 'PAYMENT'
+  final String type; // 'DEBT' or 'PAYMENT'
   final int amount;
   final String currency;
   final String orderId;
@@ -38,13 +38,13 @@ class LedgerEntryApprovalPlan {
   }
 }
 
-/// تمثيل تحديث الحساب التراكمي في accounts/{wholesalerId}_{retailerId}
+/// Representation of cumulative account update in accounts/{wholesalerId}_{retailerId}
 class AccountBalanceUpdatePlan {
   final String accountDocId;
   final String wholesalerId;
   final String retailerId;
   final String retailerName;
-  final Map<String, int> increments; // العملة -> المبلغ لزيادته عبر FieldValue.increment
+  final Map<String, int> increments; // Currency -> amount to increment via FieldValue.increment
 
   const AccountBalanceUpdatePlan({
     required this.accountDocId,
@@ -55,12 +55,12 @@ class AccountBalanceUpdatePlan {
   });
 }
 
-/// نتيجة التخطيط النقي لكتابة الاعتماد الذرية (Task 4.5.1)
+/// Result of pure planning for atomic approval write (Task 4.5.1)
 class OrderApprovalWritesPlan {
   final String orderId;
   final PaymentType paymentType;
   final List<LedgerEntryApprovalPlan> ledgerEntries;
-  final AccountBalanceUpdatePlan? accountUpdate; // موجود فقط في حالة الدفع الآجل (credit)
+  final AccountBalanceUpdatePlan? accountUpdate; // Only present in case of credit payment
 
   const OrderApprovalWritesPlan({
     required this.orderId,
@@ -70,8 +70,8 @@ class OrderApprovalWritesPlan {
   });
 }
 
-/// دالة نقية (Pure Function) تبني خطة الكتابة لعملية اعتماد الطلب دون لمس Firestore
-/// تسمح باختبار كافة الحالات المالية والحدّية عبر Unit Tests (Task 4.5.1 & 4.5.5)
+/// Pure function that builds the write plan for order approval without touching Firestore
+/// Allows testing all financial and edge cases via unit tests (Task 4.5.1 & 4.5.5)
 OrderApprovalWritesPlan buildApprovalWrites({
   required OrderEntity order,
   required PaymentType paymentType,
@@ -79,7 +79,7 @@ OrderApprovalWritesPlan buildApprovalWrites({
 }) {
   final entries = <LedgerEntryApprovalPlan>[];
 
-  // 1. إنشاء قيد DEBT لكل عملة بمعرف حتمي debt_{orderId}_{CUR}
+  // 1. Create DEBT entry per currency with deterministic ID debt_{orderId}_{CUR}
   for (final entry in order.totals.entries) {
     final cur = entry.key;
     final amount = entry.value;
@@ -98,7 +98,7 @@ OrderApprovalWritesPlan buildApprovalWrites({
       ),
     );
 
-    // 2. إذا كان نوع الدفع نقدي (cash): نضيف قيد PAYMENT مساوي فوري pay_{orderId}_{CUR}
+    // 2. If payment is cash: add immediate equal PAYMENT entry pay_{orderId}_{CUR}
     if (paymentType == PaymentType.cash) {
       entries.add(
         LedgerEntryApprovalPlan(
@@ -116,7 +116,7 @@ OrderApprovalWritesPlan buildApprovalWrites({
     }
   }
 
-  // 3. إذا كان نوع الدفع آجل (credit): نجهز تحديث الحساب balances.<CUR> بـ increment
+  // 3. If payment is credit: prepare account update balances.<CUR> via increment
   AccountBalanceUpdatePlan? accountUpdate;
   if (paymentType == PaymentType.credit) {
     final increments = <String, int>{};

@@ -11,7 +11,7 @@ import '../../domain/entities/order_entity.dart';
 import '../../domain/repositories/orders_repository.dart';
 import '../providers/retailer_orders_provider.dart';
 
-/// [OrderDetailsScreen] — شاشة تفاصيل أمر الشراء ومتابعة حالته لحظياً
+/// [OrderDetailsScreen] — Purchase order details screen with real-time tracking
 class OrderDetailsScreen extends StatefulWidget {
   final OrderEntity initialOrder;
 
@@ -33,6 +33,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     super.initState();
     final repo = getIt<OrdersRepository>();
     _orderStream = repo.watchOrder(orderId: widget.initialOrder.id);
+    _orderStream.listen((updatedOrder) {
+      if (updatedOrder != null && mounted) {
+        context.read<RetailerOrdersProvider>().updateOrderLocally(updatedOrder);
+      }
+    });
   }
 
   Future<void> _handleCancelOrder(OrderEntity order) async {
@@ -105,40 +110,40 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    // 1. بطاقة رأس الطلب والحالة
+                    // 1. Order header and status card
                     _buildHeaderCard(order),
 
                     const SizedBox(height: 16),
 
-                    // 2. حالة الرفض إن وجدت
+                    // 2. Rejection state if applicable
                     if (order.status == OrderStatus.rejected) ...[
                       _buildRejectionCard(order),
                       const SizedBox(height: 16),
                     ],
 
-                    // 3. مؤشر العمل دون اتصال
+                    // 3. Offline writes indicator
                     if (order.hasPendingWrites) ...[
                       _buildPendingWritesCard(),
                       const SizedBox(height: 16),
                     ],
 
-                    // 4. بطاقة المورد
+                    // 4. Wholesaler card
                     _buildWholesalerCard(order),
 
                     const SizedBox(height: 16),
 
-                    // 5. قائمة الأصناف
+                    // 5. Items list
                     _buildItemsCard(order),
 
                     const SizedBox(height: 16),
 
-                    // 6. الملاحظات إن وجدت
+                    // 6. Notes if present
                     if (order.note != null && order.note!.trim().isNotEmpty) ...[
                       _buildNotesCard(order.note!),
                       const SizedBox(height: 16),
                     ],
 
-                    // 7. الإجماليات
+                    // 7. Totals
                     _buildTotalsCard(order),
 
                     const SizedBox(height: 24),
@@ -146,7 +151,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 ),
               ),
 
-              // شريط الإلغاء إذا كان الطلب pending
+              // Cancel button bar if order is pending
               if (order.canCancel) _buildCancelOrderBottomBar(order),
             ],
           ),
@@ -195,7 +200,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   ),
                 ],
               ),
-              // شارة الحالة
+              // Status badge
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(

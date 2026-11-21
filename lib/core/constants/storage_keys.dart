@@ -1,4 +1,4 @@
-/// مفاتيح التخزين المحلي (SharedPreferences) — تفضيلات خفيفة فقط.
+/// Local storage keys (SharedPreferences) — lightweight preferences only.
 abstract class StorageKeys {
   const StorageKeys._();
 

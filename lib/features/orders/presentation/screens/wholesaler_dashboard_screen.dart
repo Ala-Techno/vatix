@@ -7,11 +7,11 @@ import '../providers/wholesaler_orders_provider.dart';
 import '../widgets/wholesaler_order_tile.dart';
 import 'wholesaler_order_details_screen.dart';
 
-/// [WholesalerDashboardScreen] — لوحة تحكم المورد B2B (Task 4.2)
-/// تشتمل على:
-/// 1. عداد الطلبات pending لحظياً (limit 50) ويعرض 50+ عند التجاوز (Task 4.2.1)
-/// 2. عداد طلبات الانضمام المعلقة (Task 4.2.2)
-/// 3. قائمة آخر 5 طلبات واردة مع اختصار للدخول للتفاصيل (Task 4.2.3)
+/// [WholesalerDashboardScreen] — B2B Wholesaler Dashboard (Task 4.2)
+/// Includes:
+/// 1. Real-time pending orders counter (limit 50), showing 50+ on overflow (Task 4.2.1)
+/// 2. Pending customer requests counter (Task 4.2.2)
+/// 3. Recent 5 incoming orders with quick navigation to details (Task 4.2.3)
 class WholesalerDashboardScreen extends StatelessWidget {
   final VoidCallback onNavigateToOrders;
   final VoidCallback onNavigateToCustomers;
@@ -38,15 +38,15 @@ class WholesalerDashboardScreen extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // 1. بطاقة ترحيبية بالمنشأة
+          // 1. Facility welcome banner
           _buildHeaderBanner(authUser?.businessName ?? 'المورد'),
 
           const SizedBox(height: 16),
 
-          // 2. بطاقات المؤشرات اللحظية (KPIs)
+          // 2. Real-time KPI cards
           Row(
             children: [
-              // عدّاد الطلبات المعلقة (Task 4.2.1)
+              // Pending orders counter (Task 4.2.1)
               Expanded(
                 child: _buildMetricCard(
                   title: 'طلبات معلّقة',
@@ -58,7 +58,7 @@ class WholesalerDashboardScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // عدّاد طلبات الانضمام المعلقة (Task 4.2.2)
+              // Pending customer join requests counter (Task 4.2.2)
               Expanded(
                 child: _buildMetricCard(
                   title: 'طلبات انضمام',
@@ -74,7 +74,7 @@ class WholesalerDashboardScreen extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // 3. قسم آخر 5 طلبات واردة (Task 4.2.3)
+          // 3. Recent 5 incoming orders section (Task 4.2.3)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

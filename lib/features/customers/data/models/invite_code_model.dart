@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/invite_code_entity.dart';
 
-/// [InviteCodeModel] — تحويل مستند كود الدعوة من Firestore
+/// [InviteCodeModel] — Maps invite code document from Firestore
 class InviteCodeModel extends InviteCodeEntity {
   const InviteCodeModel({
     required super.code,

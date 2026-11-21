@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:vatix/app/routing/routes.dart';
 import 'package:vatix/features/auth/presentation/gate/auth_gate.dart';
 import 'package:vatix/features/auth/presentation/screens/reset_password_screen.dart';
+import 'package:vatix/features/auth/presentation/screens/splash_screen.dart';
 import 'package:vatix/features/orders/domain/entities/order_entity.dart';
 import 'package:vatix/features/orders/presentation/screens/checkout_screen.dart';
 import 'package:vatix/features/orders/presentation/screens/order_details_screen.dart';
@@ -13,8 +14,11 @@ class AppRouter {
 
   Route<dynamic>? generateRoute(RouteSettings settings) {
     switch (settings.name) {
+      case Routes.splash:
+        return MaterialPageRoute(builder: (_) => const SplashScreen());
+
       case Routes.gate:
-        // نقطة البداية الوحيدة — AuthGate يتولى كل التوجيه
+        // AuthGate handles routing based on user state
         return MaterialPageRoute(builder: (_) => const AuthGate());
 
       case Routes.resetPassword:

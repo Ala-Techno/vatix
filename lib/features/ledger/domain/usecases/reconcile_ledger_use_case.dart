@@ -1,12 +1,12 @@
 import 'package:vatix/core/utils/currency.dart';
 import '../entities/ledger_entry_entity.dart';
 
-/// [ReconciliationItem] — نتيجة مطابقة رصيد عملة مع قيود الدفتر
+/// [ReconciliationItem] — Result of reconciling currency balance against ledger entries
 class ReconciliationItem {
   final Currency currency;
-  final int ledgerSum; // مجموع قيود الدفتر (الديون - السدادات)
-  final int accountBalance; // الرصيد المخزن في مستند accounts
-  final int difference; // الفرق (0 = متطابق تماماً)
+  final int ledgerSum; // Sum of ledger entries (debts - payments)
+  final int accountBalance; // Balance stored in accounts document
+  final int difference; // Discrepancy (0 = exact match)
 
   const ReconciliationItem({
     required this.currency,
@@ -18,7 +18,7 @@ class ReconciliationItem {
   bool get isMatch => difference == 0;
 }
 
-/// [ReconciliationReport] — التقرير الكامل لمطابقة حساب تاجر
+/// [ReconciliationReport] — Full reconciliation report for a retailer's account
 class ReconciliationReport {
   final String retailerId;
   final String retailerName;
@@ -32,11 +32,11 @@ class ReconciliationReport {
     required this.items,
   });
 
-  /// هل الحساب متطابق 100% لجميع العملات دون أي فارق؟
+  /// Whether all currencies are 100% matched without discrepancies
   bool get isAllMatched => items.values.every((item) => item.isMatch);
 }
 
-/// دالة نقية لحساب المطابقة دون لمس قاعدة البيانات لتسهيل اختبار الوحدة (Task 5.7.1)
+/// Pure function to compute reconciliation without database access for unit testing (Task 5.7.1)
 ReconciliationReport computeReconciliation({
   required String retailerId,
   required String retailerName,
@@ -81,4 +81,3 @@ ReconciliationReport computeReconciliation({
     items: items,
   );
 }
-

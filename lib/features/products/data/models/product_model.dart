@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:vatix/core/utils/currency.dart';
 import '../../domain/entities/product_entity.dart';
 
-/// [ProductModel] — نموذج المنتج للتحويل من وإلى Firestore
+/// [ProductModel] — Product data model for Firestore serialization
 class ProductModel extends ProductEntity {
   const ProductModel({
     required super.id,
@@ -22,7 +22,7 @@ class ProductModel extends ProductEntity {
     required super.updatedAt,
   });
 
-  /// التحويل من مستند Firestore (باستخدام doc.id كمعرف للمنتج)
+  /// Deserialization from Firestore document (using doc.id as product ID)
   factory ProductModel.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
   ) {
@@ -49,7 +49,44 @@ class ProductModel extends ProductEntity {
     );
   }
 
-  /// التحويل إلى خريطة (Map) لحفظها في Firestore
+  @override
+  ProductModel copyWith({
+    String? id,
+    String? wholesalerId,
+    String? name,
+    String? description,
+    int? price,
+    Currency? currency,
+    String? unit,
+    String? category,
+    String? imageUrl,
+    String? sku,
+    int? stockQuantity,
+    bool? isAvailable,
+    bool? isActive,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return ProductModel(
+      id: id ?? this.id,
+      wholesalerId: wholesalerId ?? this.wholesalerId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      currency: currency ?? this.currency,
+      unit: unit ?? this.unit,
+      category: category ?? this.category,
+      imageUrl: imageUrl ?? this.imageUrl,
+      sku: sku ?? this.sku,
+      stockQuantity: stockQuantity ?? this.stockQuantity,
+      isAvailable: isAvailable ?? this.isAvailable,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  /// Serialization to Map for Firestore persistence
   Map<String, dynamic> toFirestoreMap({bool isCreate = false}) {
     final map = <String, dynamic>{
       'wholesalerId': wholesalerId,

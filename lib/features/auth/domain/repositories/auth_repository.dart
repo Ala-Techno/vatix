@@ -3,16 +3,16 @@ import 'package:vatix/core/errors/api_result.dart';
 import 'package:vatix/core/utils/unit.dart';
 import '../entities/user_entity.dart';
 
-/// [AuthRepository] — عقد Domain لكل عمليات المصادقة.
-/// Pure Dart — لا اعتماد على Data أو Presentation.
+/// [AuthRepository] — Domain contract for all authentication operations.
+/// Pure Dart — no dependencies on Data or Presentation layers.
 abstract class AuthRepository {
-  /// تسجيل الدخول
+  /// Sign in
   Future<ApiResult<UserEntity>> signIn({
     required String email,
     required String password,
   });
 
-  /// تسجيل تاجر جديد بكود دعوة
+  /// Register new retailer with invite code
   Future<ApiResult<UserEntity>> registerRetailer({
     required String email,
     required String password,
@@ -23,15 +23,15 @@ abstract class AuthRepository {
     required String inviteCode,
   });
 
-  /// تسجيل الخروج
+  /// Sign out
   Future<void> signOut();
 
-  /// إرسال رابط إعادة تعيين كلمة المرور
+  /// Send password reset email
   Future<ApiResult<Unit>> sendPasswordResetEmail(String email);
 
-  /// Stream لمستند users/{uid} من Firestore (يستخدمه AuthProvider)
+  /// Stream of users/{uid} document from Firestore (used by AuthProvider)
   Stream<DocumentSnapshot<Map<String, dynamic>>> watchUserDoc(String uid);
 
-  /// Stream لحالة Auth (يستخدمه AuthProvider)
+  /// Stream of Auth state (used by AuthProvider)
   Stream<dynamic> watchAuthUser();
 }

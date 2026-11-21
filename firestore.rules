@@ -3,48 +3,48 @@ service cloud.firestore {
   match /databases/{db}/documents {
 
     // ─────────────────────────────────────────────
-    // دوال مساعدة مشتركة
+    // Common Helper Functions
     // ─────────────────────────────────────────────
 
-    // هل المستخدم مسجّل دخوله؟
+    // Is the user signed in?
     function signedIn() {
       return request.auth != null;
     }
 
-    // جلب مستند المستخدم الحالي من users
+    // Get current user's document from users collection
     function me() {
       return get(/databases/$(db)/documents/users/$(request.auth.uid)).data;
     }
 
-    // هل المستخدم مورد (wholesaler)؟
+    // Is the user a wholesaler?
     function isWholesaler() {
       return signedIn() && me().role == 'wholesaler';
     }
 
-    // هل المستخدم تاجر نشط (active retailer)؟
+    // Is the user an active retailer?
     function isActiveRetailer() {
       return signedIn() && me().role == 'retailer' && me().status == 'active';
     }
 
-    // هل العملة المدخلة ضمن العملات الثلاث المعتمدة في النظام؟
+    // Is the currency valid in the system?
     function currencyOk(c) {
       return c in ['YER', 'SAR', 'USD'];
     }
 
     // ─────────────────────────────────────────────
-    // invites/{code} — أكواد الدعوة
+    // invites/{code} — Invite Codes
     // ─────────────────────────────────────────────
     
    match /invites/{code} {
 
-      // قراءة كود محدد بـ get مسموحة للتحقق من الكود أثناء التسجيل
+      // Read single code by get is allowed for verification during registration
       allow get: if true;
 
-      // [E1] المورد فقط يستطيع list على أكواده لعرضها في شاشة العملاء وتدويرها
+      // [E1] Wholesaler can list only their own invite codes to view and rotate
       allow list: if isWholesaler()
         && resource.data.wholesalerId == request.auth.uid;
 
-      // المورد ينشئ أو يعدّل كوداً يخصّه هو فقط
+      // Wholesaler can create or update only their own invite codes
       allow create, update: if isWholesaler()
         && request.resource.data.wholesalerId == request.auth.uid;
 
@@ -52,13 +52,11 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────
-    // users/{uid} — مستندات المستخدمين
+    // users/{uid} — User Profiles
     // ─────────────────────────────────────────────
     match /users/{uid} {
 
-      // المستخدم يقرأ ملفه الشخصي
-      // أو المورد يقرأ مستندات تجّاره (wholesalerId == uid المورد)
-      // أو التاجر يقرأ مستند مورده
+      // User reads own profile, or wholesaler reads their retailers, or retailer reads their wholesaler
       allow read: if signedIn()
         && (
           uid == request.auth.uid
@@ -66,12 +64,12 @@ service cloud.firestore {
           || uid == me().wholesalerId
         );
 
-      // تسجيل تاجر جديد فقط — بشروط صارمة:
-      // 1) المستند يخص نفس المستخدم المسجل
-      // 2) الدور retailer فقط (لا يمكن التسجيل كمورد)
-      // 3) الحالة pending (لا يمكن التفعيل الذاتي)
-      // 4) كود الدعوة موجود في invites ونشط
-      // 5) الـ wholesalerId في الطلب يطابق ما في مستند كود الدعوة
+      // Register new retailer only — under strict conditions:
+      // 1) Document ID matches auth UID
+      // 2) Role is retailer only (cannot register as wholesaler)
+      // 3) Initial status is pending (cannot self-activate)
+      // 4) Invite code exists and is active
+      // 5) wholesalerId in request matches invite code document
       allow create: if request.auth.uid == uid
         && request.resource.data.role == 'retailer'
         && request.resource.data.status == 'pending'
@@ -80,65 +78,71 @@ service cloud.firestore {
         && get(/databases/$(db)/documents/invites/$(request.resource.data.inviteCode)).data.wholesalerId
              == request.resource.data.wholesalerId;
 
-      // المستخدم يعدّل بياناته الشخصية فقط (لا يمسّ الدور أو المورد أو الحالة)
+      // User updates only their personal profile fields (cannot touch role, wholesaler, or status)
       allow update: if request.auth.uid == uid
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['businessName','ownerName','phone','city','address','avatarUrl','updatedAt']);
 
-      // المورد يقبل أو يوقف تاجراً تابعاً له فقط
-      // ويعدّل حقلَي status وupdatedAt فقط (لا غير)
+      // Wholesaler approves or blocks their own affiliated retailer only
+      // modifying only status and updatedAt
       allow update: if isWholesaler()
         && resource.data.wholesalerId == request.auth.uid
         && request.resource.data.status in ['active','blocked']
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['status','updatedAt']);
 
-      // لا أحد يحذف مستند مستخدم
+      // User documents cannot be deleted
       allow delete: if false;
     }
 
     // ─────────────────────────────────────────────
-    // products/{id} — المنتجات
+    // products/{id} — Products
     // ─────────────────────────────────────────────
     match /products/{id} {
-      // المورد يقرأ منتجاته، والتاجر النشط يقرأ فقط منتجات مورده
+      // Wholesaler reads their products; active retailer reads their wholesaler's products
       allow read: if isWholesaler() && resource.data.wholesalerId == request.auth.uid
                   || isActiveRetailer() && resource.data.wholesalerId == me().wholesalerId;
 
-      // المورد ينشئ منتجاً يخصّه فقط، مع التحقق من أن العملة صحيحة (YER / SAR / USD)
+      // Wholesaler creates product under their ID with valid currency
       allow create: if isWholesaler()
         && request.resource.data.wholesalerId == request.auth.uid
         && currencyOk(request.resource.data.currency);
 
-      // المورد يعدّل أو يحذف منتجاته الخاصة فقط
+      // Wholesaler updates or deletes their own products
       allow update, delete: if isWholesaler()
         && resource.data.wholesalerId == request.auth.uid;
+
+      // Active retailer can update stockQuantity and availability upon order placement
+      allow update: if isActiveRetailer()
+        && resource.data.wholesalerId == me().wholesalerId
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['stockQuantity', 'isAvailable', 'updatedAt']);
     }
 
     // ─────────────────────────────────────────────
-    // orders/{id} — الطلبات
+    // orders/{id} — Orders
     // ─────────────────────────────────────────────
     match /orders/{id} {
-      // قراءة الطلب مسموحة للتاجر صاحب الطلب أو المورد الموجه له الطلب
+      // Order readable by retailer who placed it or recipient wholesaler
       allow read: if signedIn() && (
         resource.data.retailerId == request.auth.uid
         || resource.data.wholesalerId == request.auth.uid
       );
 
-      // التاجر النشط فقط ينشئ طلباً:
-      // 1) retailerId يطابق UID التاجر المسجل
-      // 2) wholesalerId يطابق مورد التاجر (me().wholesalerId)
-      // 3) الحالة الابتدائية pending حصراً
+      // Active retailer creates order:
+      // 1) retailerId matches auth UID
+      // 2) wholesalerId matches retailer's wholesaler
+      // 3) Initial status is pending
       allow create: if isActiveRetailer()
         && request.resource.data.retailerId == request.auth.uid
         && request.resource.data.wholesalerId == me().wholesalerId
         && request.resource.data.status == 'pending';
 
-      // تحديثات المورد:
-      // 1) pending -> approved (مع paymentType إما credit أو cash)
-      // 2) pending -> rejected (مع سبب الرفض)
+      // Wholesaler updates:
+      // 1) pending -> approved (with paymentType credit or cash)
+      // 2) pending -> rejected (with rejectionReason)
       // 3) approved -> delivered
-      // مع قيد affectedKeys الصارم
+      // restricted by affectedKeys
       allow update: if isWholesaler()
         && resource.data.wholesalerId == request.auth.uid
         && ((resource.data.status == 'pending' && request.resource.data.status == 'approved'
@@ -148,28 +152,28 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['status', 'paymentType', 'updatedAt', 'approvedAt', 'deliveredAt', 'rejectionReason']);
 
-      // التاجر يلغي طلبه فقط إذا كانت حالته pending ويعدل فقط status و updatedAt
+      // Retailer cancels pending order only, modifying only status and updatedAt
       allow update: if signedIn()
         && resource.data.retailerId == request.auth.uid
         && resource.data.status == 'pending'
         && request.resource.data.status == 'cancelled'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']);
 
-      // لا يُحذف أي طلب
+      // Orders cannot be deleted
       allow delete: if false;
     }
 
     // ─────────────────────────────────────────────
-    // ledger/{id} — دفتر القيود المالية (Task 5.6)
+    // ledger/{id} — Financial Ledger Entries
     // ─────────────────────────────────────────────
     match /ledger/{id} {
-      // قراءة القيود مسموحة للتاجر أو المورد المعنيين بالقيد حصراً
+      // Ledger entry readable by relevant retailer or wholesaler
       allow read: if signedIn() && (
         resource.data.retailerId == request.auth.uid
         || resource.data.wholesalerId == request.auth.uid
       );
 
-      // المورد فقط ينشئ قيداً مالياً لتاجر تابع له حصراً مع تدقيق الحقول
+      // Wholesaler creates ledger entry for affiliated retailer with strict field validation
       allow create: if isWholesaler()
         && request.resource.data.wholesalerId == request.auth.uid
         && request.resource.data.retailerId is string
@@ -181,21 +185,21 @@ service cloud.firestore {
         && request.resource.data.createdBy == request.auth.uid
         && get(/databases/$(db)/documents/users/$(request.resource.data.retailerId)).data.wholesalerId == request.auth.uid;
 
-      // ممنوع نهائياً تعديل أو حذف أي قيد محاسبي (سجل تاريخي غير قابل للتغيير)
+      // Immutable financial ledger: update or delete is strictly prohibited
       allow update, delete: if false;
     }
 
     // ─────────────────────────────────────────────
-    // accounts/{id} — حسابات وأرصدة التجار (Task 5.6)
+    // accounts/{id} — Retailer Accounts & Balances
     // ─────────────────────────────────────────────
     match /accounts/{id} {
-      // قراءة الحساب مسموحة للتاجر أو المورد المعنيين بالحساب حصراً
+      // Account readable by relevant retailer or wholesaler
       allow read: if signedIn() && (
         resource.data.retailerId == request.auth.uid
         || resource.data.wholesalerId == request.auth.uid
       );
 
-      // المورد فقط يكتب أو يدمج تحديثات الأرصدة لتجاره التابعين له
+      // Wholesaler updates or merges balances for their affiliated retailers
       allow write: if isWholesaler()
         && request.resource.data.wholesalerId == request.auth.uid
         && request.resource.data.retailerId is string
@@ -203,8 +207,7 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────
-    // قاعدة افتراضية — رفض كل ما لم يُذكر صراحةً
-    // (ledger / accounts تُضاف في M4)
+    // Default fallback — deny anything not explicitly allowed
     // ─────────────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;

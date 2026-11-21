@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:vatix/core/theme/app_colors.dart';
 import 'package:vatix/features/auth/presentation/providers/auth_provider.dart';
 
-/// [ResetPasswordScreen] — شاشة إعادة تعيين كلمة المرور — Material 3
+/// [ResetPasswordScreen] — Password reset screen — Material 3
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
 

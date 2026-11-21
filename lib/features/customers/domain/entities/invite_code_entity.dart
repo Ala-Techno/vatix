@@ -1,9 +1,9 @@
-/// [InviteCodeEntity] — كود دعوة يخص مورداً معيناً.
+/// [InviteCodeEntity] — Invite code belonging to a specific wholesaler.
 class InviteCodeEntity {
-  final String code; // كود الدعوة نفسه (وهو doc.id في مجموعة invites)
-  final String wholesalerId; // معرف المورد صاحب الكود
-  final bool isActive; // هل الكود نشط حالياً؟
-  final DateTime createdAt; // وقت الإنشاء
+  final String code; // The invite code itself (doc.id in invites collection)
+  final String wholesalerId; // Wholesaler ID owning the code
+  final bool isActive; // Whether the code is currently active
+  final DateTime createdAt; // Creation timestamp
 
   const InviteCodeEntity({
     required this.code,

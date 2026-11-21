@@ -3,7 +3,7 @@ import 'package:vatix/core/theme/app_colors.dart';
 import 'package:vatix/core/utils/currency.dart';
 import 'package:vatix/core/utils/money_formatter.dart';
 
-/// [CartSummaryBar] — شريط إجماليات السلة السفلي مع دعم عرض سطر مخصص لكل عملة
+/// [CartSummaryBar] — Bottom cart summary bar supporting dedicated lines per currency.
 class CartSummaryBar extends StatelessWidget {
   final Map<Currency, int> totalsByCurrency;
   final VoidCallback? onCheckout;
@@ -39,9 +39,9 @@ class CartSummaryBar extends StatelessWidget {
         top: false,
         child: Row(
           children: [
-            // ── عرض الإجماليات لكل عملة في أسطر مستقلة ──────────────────────
+            // ── Display totals per currency in separate lines ──────────────────────
             Expanded(
-              child: Column(
+                child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -88,13 +88,13 @@ class CartSummaryBar extends StatelessWidget {
             ),
             const SizedBox(width: 14),
 
-            // ── زر المتابعة ────────────────────────────────────────────────
+            // ── Checkout button ─────────────────────────────────────────────
             SizedBox(
               height: 48,
               child: ElevatedButton(
                 onPressed: (hasItems && !isLoading) ? onCheckout : null,
                 style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(0, 48), // إلغاء الـ double.infinity الموروث من الثيم العام
+                  minimumSize: const Size(0, 48), // Override double.infinity inherited from global theme
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

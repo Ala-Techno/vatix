@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:vatix/core/theme/app_colors.dart';
 import 'package:vatix/features/cart/domain/entities/cart_item_entity.dart';
 
-/// [CartItemTile] — بطاقة عرض بند السلة الذكية والحديثة
-/// مصممة بنظام طبقتين لمنع أي تجاوز أبعاد (Zero Overflows)
-/// وتتيح إنقاص الكمية حتى 0 ليختفي الصنف تلقائياً بدون زر حذف منفصل
+/// [CartItemTile] — Smart and modern cart item card.
+/// Designed with a two-tier layout to prevent overflows (Zero Overflows),
+/// allowing decrementing down to 0 to auto-remove items without a separate delete button.
 class CartItemTile extends StatelessWidget {
   final CartItemEntity item;
   final VoidCallback onIncrement;
@@ -41,11 +41,11 @@ class CartItemTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── 1. الجزء العلوي: الصورة + تفاصيل المنتج والوحدة ────────────
+            // ── 1. Top Section: Image + product details and unit ────────────
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // صورة الصنف
+                // Item image
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
@@ -79,7 +79,7 @@ class CartItemTile extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
 
-                // اسم الصنف وشارة الوحدة والـ SKU
+                // Item name, unit badge, and SKU
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,12 +151,12 @@ class CartItemTile extends StatelessWidget {
             const Divider(height: 1, color: AppColors.borderSubtle),
             const SizedBox(height: 10),
 
-            // ── 2. الجزء السفلي: الأسعار + وحدة التحكم الذكية بالكمية ────────
+            // ── 2. Bottom Section: Pricing + smart quantity controller ────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // الأسعار (سعر الوحدة والإجمالي الإجمالي)
+                // Pricing (unit price and line total)
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,8 +205,8 @@ class CartItemTile extends StatelessWidget {
 
                 const SizedBox(width: 10),
 
-                // وحدة التحكم الذكية بالأرقام (+ / -)
-                // عند الكمية 1 تظهر أيقونة السلة الحمراء، وبالنقر ينقص ويختفي تلقائياً
+                // Smart quantity controller (+ / -)
+                // At quantity 1, displays trash icon, clicking it decrements and removes automatically
                 Container(
                   decoration: BoxDecoration(
                     color: AppColors.surfaceVariant,
@@ -216,7 +216,7 @@ class CartItemTile extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // زر الإنقاص (يتحول لأيقونة الحذف عند 1 للحذف المباشر)
+                      // Decrement button (turns to trash icon at quantity 1 for instant deletion)
                       InkWell(
                         onTap: onDecrement,
                         borderRadius: const BorderRadius.horizontal(
@@ -238,7 +238,7 @@ class CartItemTile extends StatelessWidget {
                         ),
                       ),
 
-                      // عرض الكمية الحالية
+                      // Current quantity display
                       Container(
                         constraints: const BoxConstraints(minWidth: 32),
                         alignment: Alignment.center,
@@ -253,7 +253,7 @@ class CartItemTile extends StatelessWidget {
                         ),
                       ),
 
-                      // زر الزيادة
+                      // Increment button
                       InkWell(
                         onTap: item.quantity < 999 ? onIncrement : null,
                         borderRadius: const BorderRadius.horizontal(

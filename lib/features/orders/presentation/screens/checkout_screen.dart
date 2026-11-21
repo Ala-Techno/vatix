@@ -8,9 +8,10 @@ import 'package:vatix/core/utils/money_formatter.dart';
 import 'package:vatix/features/auth/presentation/providers/auth_provider.dart';
 import 'package:vatix/features/cart/presentation/providers/cart_provider.dart';
 import 'package:vatix/features/orders/domain/usecases/place_order_use_case.dart';
+import '../providers/retailer_orders_provider.dart';
 import 'order_success_screen.dart';
 
-/// [CheckoutScreen] — شاشة مراجعة وتأكيد أمر الشراء قبل الإرسال
+/// [CheckoutScreen] — Review and confirm purchase order screen before submission
 class CheckoutScreen extends StatefulWidget {
   final String? initialWholesalerName;
 
@@ -75,7 +76,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _handleSubmitOrder() async {
-    // 1. حارس منع الضغط المزدوج
+    // 1. Guard against double-tap
     if (_isSubmitting) return;
 
     final cart = context.read<CartProvider>();
@@ -111,11 +112,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      // حفظ مرجع الـ Navigator قبل أي عمليات غير متزامنة
+      // Retain navigator reference prior to async operations
       final navigator = Navigator.of(context);
       final messenger = ScaffoldMessenger.of(context);
+      final ordersProvider = context.read<RetailerOrdersProvider>();
 
-      // استخدام PlaceOrderUseCase من DI مباشرة
+      // Use PlaceOrderUseCase directly from DI
       final placeOrderUseCase = getIt<PlaceOrderUseCase>();
       final wholesalerName = _wholesalerBusinessName?.trim().isNotEmpty == true
           ? _wholesalerBusinessName!.trim()
@@ -134,10 +136,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       switch (result) {
         case Success(data: final createdOrder):
-          // تفريغ السلة بنجاح بعد إنشاء الطلب
+          // Clear cart successfully after creating order
           cart.clear();
 
-          // التوجيه لشاشة النجاح عبر المرجع المسبق لضمان عدم التعليق نهائياً
+          // Immediately add order locally so it displays without delay
+          ordersProvider.addOrderLocally(createdOrder);
+
+          // Route to success screen using retained navigator reference
           navigator.pushReplacement(
             MaterialPageRoute(
               builder: (_) => OrderSuccessScreen(order: createdOrder),
@@ -209,27 +214,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      // 1. بطاقة بيانات المورد
+                      // 1. Wholesaler info card
                       _buildWholesalerCard(wholesalerTitle, authUser?.businessName),
 
                       const SizedBox(height: 16),
 
-                      // 2. بطاقة بنر حالة الطلب الأولية
+                      // 2. Initial order status banner card
                       _buildStatusInfoBanner(),
 
                       const SizedBox(height: 16),
 
-                      // 3. قائمة ملخص الأصناف
+                      // 3. Items summary list
                       _buildItemsSummaryCard(cart),
 
                       const SizedBox(height: 16),
 
-                      // 4. حقل ملاحظات إضافية للطلب
+                      // 4. Additional order notes field
                       _buildNotesCard(),
 
                       const SizedBox(height: 16),
 
-                      // 5. بطاقة الإجماليات لكل عملة
+                      // 5. Totals breakdown card per currency
                       _buildTotalsBreakdownCard(cart),
 
                       const SizedBox(height: 24),
@@ -237,7 +242,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
                 ),
 
-                // شريط التثبيت السفلي لإرسال الطلب
+                // Bottom persistent submit bar
                 _buildBottomSubmitBar(),
               ],
             ),
@@ -637,12 +642,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   children: [
                     Icon(Icons.send_rounded, size: 20),
                     SizedBox(width: 8),
-                    Text(
-                      'إرسال أمر الشراء',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Cairo',
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'إرسال أمر الشراء',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Cairo',
+                            height: 1.2,
+                          ),
+                        ),
                       ),
                     ),
                   ],

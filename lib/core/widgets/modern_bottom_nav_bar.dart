@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-/// شريط التنقل السفلي الحديث (Modern Bottom Navigation Bar) مع دعم الشارات (Badges)
+/// [ModernBottomNavBar] — Modern bottom navigation bar with badge support
 class ModernBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;

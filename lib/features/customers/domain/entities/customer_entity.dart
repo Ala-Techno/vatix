@@ -1,18 +1,18 @@
 import 'package:vatix/features/auth/domain/entities/user_entity.dart';
 
-/// [CustomerEntity] — يمثل عميلاً (تاجراً) يتبع لمورد معين.
+/// [CustomerEntity] — Represents a customer (retailer) associated with a wholesaler.
 class CustomerEntity {
-  final String id; // معرّف التاجر في Firestore (doc.id)
-  final String businessName; // اسم المحل / المنشأة
-  final String ownerName; // اسم التاجر / المالك
-  final String phone; // رقم الهاتف
-  final String city; // المدينة
-  final String email; // البريد الإلكتروني
-  final String? address; // العنوان التفصيلي
-  final String? avatarUrl; // صورة المنشأة إن وجدت
-  final String wholesalerId; // معرف المورد التابع له
+  final String id; // Retailer ID in Firestore (doc.id)
+  final String businessName; // Business / shop name
+  final String ownerName; // Owner name
+  final String phone; // Phone number
+  final String city; // City
+  final String email; // Email
+  final String? address; // Detailed address
+  final String? avatarUrl; // Shop avatar URL if available
+  final String wholesalerId; // Associated wholesaler ID
   final RetailerStatus status; // pending / active / blocked
-  final String? inviteCode; // كود الدعوة الذي استخدمه عند التسجيل
+  final String? inviteCode; // Invite code used during registration
   final DateTime createdAt;
   final DateTime updatedAt;
 

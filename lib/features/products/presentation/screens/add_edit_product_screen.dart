@@ -1,15 +1,19 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:vatix/core/di/dependency_injection.dart';
+import 'package:vatix/core/services/image_upload_service.dart';
 import 'package:vatix/core/theme/app_colors.dart';
 import 'package:vatix/core/utils/currency.dart';
 import 'package:vatix/core/utils/money_formatter.dart';
+import 'package:vatix/core/widgets/vatix_product_image.dart';
 import 'package:vatix/features/auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/product_entity.dart';
 import '../providers/wholesaler_products_provider.dart';
 
-/// [AddEditProductScreen] — شاشة إضافة أو تعديل منتج في كتالوج المورد
+/// [AddEditProductScreen] — Wholesaler catalog product add/edit screen
 class AddEditProductScreen extends StatelessWidget {
   final ProductEntity? product;
 
@@ -17,7 +21,7 @@ class AddEditProductScreen extends StatelessWidget {
 
   bool get isEditing => product != null;
 
-  /// مسار الانتقال للشاشة مع تمرير الـ Provider من الـ context الحالي
+  /// Route to screen passing the Provider from the current context
   static Route<bool?> route(BuildContext context, {ProductEntity? product}) {
     final provider = context.read<WholesalerProductsProvider>();
     return MaterialPageRoute<bool?>(
@@ -73,6 +77,14 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
   late Currency _selectedCurrency;
   late bool _isAvailable;
 
+  // Product image management
+  File? _pickedImageFile;
+  String? _currentImageUrl;
+  bool _isUploadingImage = false;
+  double _uploadProgress = 0.0;
+  int _uploadPercent = 0;
+  late final ImageUploadService _imageUploadService;
+
   static const _commonUnits = [
     'كرتون',
     'حبة',
@@ -92,7 +104,7 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
     _nameController = TextEditingController(text: p?.name ?? '');
     _descriptionController = TextEditingController(text: p?.description ?? '');
 
-    // تحويل السعر من أصغر وحدة إلى نص عادي للإدخال
+    // Convert price from subunits to decimal/integer string for input
     if (p != null) {
       if (p.currency.decimals == 0) {
         _priceController = TextEditingController(text: p.price.toString());
@@ -115,6 +127,8 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
 
     _selectedCurrency = p?.currency ?? Currency.yer;
     _isAvailable = p?.isAvailable ?? true;
+    _currentImageUrl = p?.imageUrl;
+    _imageUploadService = getIt<ImageUploadService>();
   }
 
   @override
@@ -129,6 +143,121 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
     super.dispose();
   }
 
+  Future<void> _pickImage(ImageSource source) async {
+    Navigator.pop(context); // إغلاق الـ bottom sheet
+    final result = await _imageUploadService.pickAndValidateImage(source: source);
+    if (!mounted) return;
+
+    if (result.errorMessage != null) {
+      _showError(result.errorMessage!);
+      return;
+    }
+
+    if (result.file != null) {
+      setState(() {
+        _pickedImageFile = result.file;
+      });
+    }
+  }
+
+  void _showImageSourcePicker() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Material(
+          color: Colors.transparent,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const Text(
+                  'اختر صورة المنتج',
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'الحد الأقصى 2 ميجابايت (JPG, PNG, WEBP)',
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
+                  ),
+                  title: const Text('المعرض', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600)),
+                  subtitle: const Text('اختر صورة من ألبوم الصور', style: TextStyle(fontFamily: 'Cairo', fontSize: 12)),
+                  onTap: () => _pickImage(ImageSource.gallery),
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.accent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.camera_alt_rounded, color: AppColors.accent),
+                  ),
+                  title: const Text('الكاميرا', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600)),
+                  subtitle: const Text('التقط صورة جديدة للمنتج', style: TextStyle(fontFamily: 'Cairo', fontSize: 12)),
+                  onTap: () => _pickImage(ImageSource.camera),
+                ),
+                if (_pickedImageFile != null || (_currentImageUrl != null && _currentImageUrl!.isNotEmpty)) ...[
+                  const Divider(height: 24),
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.statusBlocked.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.delete_outline_rounded, color: AppColors.statusBlocked),
+                    ),
+                    title: const Text('حذف الصورة', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600, color: AppColors.statusBlocked)),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      setState(() {
+                        _pickedImageFile = null;
+                        _currentImageUrl = null;
+                      });
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleSave() async {
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
@@ -139,7 +268,7 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
       return;
     }
 
-    // 1. فحص وتحويل السعر إلى Subunits بأمان تام عبر MoneyFormatter
+    // 1. Safely parse and convert price to subunits via MoneyFormatter
     final priceSubunits = MoneyFormatter.tryParseToSubunits(
       _priceController.text,
       _selectedCurrency,
@@ -151,7 +280,7 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
       return;
     }
 
-    // 2. فحص كمية المخزون (إن كُتبت)
+    // 2. Validate stock quantity (if entered)
     int? stockQty;
     if (_stockController.text.trim().isNotEmpty) {
       stockQty = int.tryParse(_stockController.text.trim());
@@ -160,6 +289,42 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
         return;
       }
     }
+
+    // 3. Upload image to Firebase Storage if a new image was chosen, with percentage tracking
+    String? finalImageUrl = _currentImageUrl;
+    if (_pickedImageFile != null) {
+      setState(() {
+        _isUploadingImage = true;
+        _uploadProgress = 0.0;
+        _uploadPercent = 0;
+      });
+
+      final uploadedUrl = await _imageUploadService.uploadProductImage(
+        imageFile: _pickedImageFile!,
+        wholesalerId: user.id,
+        onProgress: (progress, percent) {
+          if (mounted) {
+            setState(() {
+              _uploadProgress = progress;
+              _uploadPercent = percent;
+            });
+          }
+        },
+      );
+
+      if (!mounted) return;
+
+      if (uploadedUrl != null) {
+        finalImageUrl = uploadedUrl;
+      } else {
+        setState(() => _isUploadingImage = false);
+        _showError('فشل رفع صورة المنتج، تأكد من اتصال الإنترنت وحاول مجدداً');
+        return;
+      }
+      setState(() => _isUploadingImage = false);
+    }
+
+    if (!mounted) return;
 
     final provider = context.read<WholesalerProductsProvider>();
     bool success = false;
@@ -177,6 +342,7 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
         category: _categoryController.text.trim().isEmpty
             ? null
             : _categoryController.text.trim(),
+        imageUrl: finalImageUrl,
         sku: _skuController.text.trim().isEmpty
             ? null
             : _skuController.text.trim().toUpperCase(),
@@ -196,6 +362,7 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
         category: _categoryController.text.trim().isEmpty
             ? null
             : _categoryController.text.trim(),
+        imageUrl: finalImageUrl,
         sku: _skuController.text.trim().isEmpty
             ? null
             : _skuController.text.trim().toUpperCase(),
@@ -270,7 +437,11 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ── 1. بيانات المنتج الأساسية ────────────────────────
+                // ── 0. Product image ────────────────────────────────
+                _buildImagePickerCard(),
+                const SizedBox(height: 14),
+
+                // ── 1. Basic product info ───────────────────────────
                 _buildCardSection(
                   title: 'بيانات الصنف والوصف',
                   icon: Icons.inventory_2_outlined,
@@ -305,7 +476,7 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
                 ),
                 const SizedBox(height: 14),
 
-                // ── 2. السعر والعملة ─────────────────────────────────
+                // ── 2. Price and currency ────────────────────────────
                 _buildCardSection(
                   title: 'السعر والعملة المعتمدة',
                   icon: Icons.payments_outlined,
@@ -313,7 +484,7 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // حقل السعر
+                        // Price field
                         Expanded(
                           flex: 3,
                           child: TextFormField(
@@ -348,7 +519,7 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
                         ),
                         const SizedBox(width: 10),
 
-                        // قائمة اختيار العملة (YER, SAR, USD)
+                        // Currency dropdown (YER, SAR, USD)
                         Expanded(
                           flex: 2,
                           child: DropdownButtonFormField<Currency>(
@@ -386,7 +557,7 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
                 ),
                 const SizedBox(height: 14),
 
-                // ── 3. وحدة البيع والتصنيف ───────────────────────────
+                // ── 3. Sale unit and category ────────────────────────
                 _buildCardSection(
                   title: 'وحدة البيع والتصنيف',
                   icon: Icons.category_outlined,
@@ -407,15 +578,32 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
                       },
                     ),
                     const SizedBox(height: 8),
-                    // اقتراحات سريعة للوحدات الشائعة
+                    // Quick suggestions for common units
                     Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
+                      spacing: 8,
+                      runSpacing: 6,
                       children: _commonUnits.map((u) {
                         final isSelected = _unitController.text.trim() == u;
                         return ChoiceChip(
-                          label: Text(u),
+                          label: Text(
+                            u,
+                            style: TextStyle(
+                              fontFamily: 'Cairo',
+                              fontSize: 12,
+                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                              color: isSelected ? Colors.white : AppColors.textPrimary,
+                            ),
+                          ),
                           selected: isSelected,
+                          selectedColor: AppColors.primary,
+                          backgroundColor: const Color(0xFFF1F5F9),
+                          side: BorderSide(
+                            color: isSelected ? AppColors.primary : const BorderSide(color: Color(0xFFCBD5E1)).color,
+                            width: 1,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                           onSelected: (_) {
                             setState(() => _unitController.text = u);
                           },
@@ -424,7 +612,7 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
                     ),
                     const SizedBox(height: 14),
 
-                    // حقل التصنيف مع اقتراحات موجودة
+                    // Category field with existing suggestions
                     TextFormField(
                       controller: _categoryController,
                       textInputAction: TextInputAction.next,
@@ -437,17 +625,32 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
                     if (provider.categories.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
+                        spacing: 8,
+                        runSpacing: 6,
                         children: provider.categories.take(6).map((cat) {
                           final isSelected =
                               _categoryController.text.trim() == cat;
-                          return ActionChip(
-                            label: Text(cat),
-                            backgroundColor: isSelected
-                                ? AppColors.primary.withValues(alpha: 0.1)
-                                : AppColors.surfaceVariant,
-                            onPressed: () {
+                          return ChoiceChip(
+                            label: Text(
+                              cat,
+                              style: TextStyle(
+                                fontFamily: 'Cairo',
+                                fontSize: 12,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                                color: isSelected ? Colors.white : AppColors.textPrimary,
+                              ),
+                            ),
+                            selected: isSelected,
+                            selectedColor: AppColors.primary,
+                            backgroundColor: const Color(0xFFF1F5F9),
+                            side: BorderSide(
+                              color: isSelected ? AppColors.primary : const BorderSide(color: Color(0xFFCBD5E1)).color,
+                              width: 1,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            onSelected: (_) {
                               setState(() => _categoryController.text = cat);
                             },
                           );
@@ -458,7 +661,7 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
                 ),
                 const SizedBox(height: 14),
 
-                // ── 4. كود SKU والمخزون والتوفر ──────────────────────
+                // ── 4. SKU code, stock and availability ─────────────
                 _buildCardSection(
                   title: 'المخزون والتوفر',
                   icon: Icons.warehouse_outlined,
@@ -501,41 +704,87 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
                       ],
                     ),
                     const SizedBox(height: 14),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text(
-                        'إتاحة الصنف للطلب المباشر من التجار',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'Cairo',
+                    Material(
+                      color: Colors.transparent,
+                      child: SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text(
+                          'إتاحة الصنف للطلب المباشر من التجار',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'Cairo',
+                          ),
                         ),
+                        subtitle: const Text(
+                          'عند التعطيل، يظل الصنف ظاهراً كمعطل ولا يمكن إضافته للسلة.',
+                          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                        value: _isAvailable,
+                        activeThumbColor: AppColors.statusActive,
+                        onChanged: (val) => setState(() => _isAvailable = val),
                       ),
-                      subtitle: const Text(
-                        'عند التعطيل، يظل الصنف ظاهراً كمعطل ولا يمكن إضافته للسلة.',
-                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                      ),
-                      value: _isAvailable,
-                      activeThumbColor: AppColors.statusActive,
-                      onChanged: (val) => setState(() => _isAvailable = val),
                     ),
                   ],
                 ),
                 const SizedBox(height: 28),
 
-                // ── زر الحفظ النهائي ─────────────────────────────────
+                // ── Final save button ────────────────────────────────
                 SizedBox(
                   height: 52,
                   child: ElevatedButton(
-                    onPressed: provider.isSaving ? null : _handleSave,
-                    child: provider.isSaving
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5,
-                            ),
+                    onPressed: (provider.isSaving || _isUploadingImage) ? null : _handleSave,
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: (provider.isSaving || _isUploadingImage)
+                        ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      value: _isUploadingImage ? _uploadProgress : null,
+                                      color: Colors.white,
+                                      strokeWidth: 2.2,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    _isUploadingImage
+                                        ? 'جاري رفع الصورة ($_uploadPercent%)...'
+                                        : 'جاري الحفظ...',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      fontFamily: 'Cairo',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (_isUploadingImage) ...[
+                                const SizedBox(height: 4),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(2),
+                                  child: SizedBox(
+                                    width: 160,
+                                    height: 3,
+                                    child: LinearProgressIndicator(
+                                      value: _uploadProgress,
+                                      backgroundColor: Colors.white24,
+                                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           )
                         : Text(
                             widget.isEditing
@@ -553,6 +802,218 @@ class _AddEditProductContentState extends State<_AddEditProductContent> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// Item image selection and preview card
+  Widget _buildImagePickerCard() {
+    final hasImage = _pickedImageFile != null ||
+        (_currentImageUrl != null && _currentImageUrl!.isNotEmpty);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderSubtle),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColor,
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.add_photo_alternate_outlined,
+                  size: 18, color: AppColors.primaryLight),
+              const SizedBox(width: 8),
+              const Text(
+                'صورة الصنف (اختياري)',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                  fontFamily: 'Cairo',
+                ),
+              ),
+              const Spacer(),
+              if (hasImage)
+                TextButton.icon(
+                  onPressed: _showImageSourcePicker,
+                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  label: const Text(
+                    'تغيير',
+                    style: TextStyle(fontFamily: 'Cairo', fontSize: 13),
+                  ),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: AppColors.primary,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: _showImageSourcePicker,
+            child: hasImage
+                ? Container(
+                    height: 160,
+                    width: double.infinity,
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.borderSubtle),
+                      color: AppColors.surfaceVariant,
+                    ),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (_pickedImageFile != null)
+                          Image.file(
+                            _pickedImageFile!,
+                            fit: BoxFit.cover,
+                          )
+                        else if (_currentImageUrl != null &&
+                            _currentImageUrl!.isNotEmpty)
+                          VatixProductImage(
+                            imageUrl: _currentImageUrl!,
+                            fit: BoxFit.cover,
+                          ),
+                        if (_isUploadingImage)
+                          Container(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      SizedBox(
+                                        width: 48,
+                                        height: 48,
+                                        child: CircularProgressIndicator(
+                                          value: _uploadProgress,
+                                          strokeWidth: 3.5,
+                                          color: Colors.white,
+                                          backgroundColor: Colors.white24,
+                                        ),
+                                      ),
+                                      Text(
+                                        '$_uploadPercent%',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 12,
+                                          fontFamily: 'Cairo',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'جاري الرفع والسيرفر...',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontFamily: 'Cairo',
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          Positioned(
+                            bottom: 8,
+                            left: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.65),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.camera_alt_outlined,
+                                      size: 14, color: Colors.white),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'تغيير الصورة',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontFamily: 'Cairo',
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  )
+                : Container(
+                    height: 130,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFFCBD5E1),
+                        width: 1.5,
+                        strokeAlign: BorderSide.strokeAlignCenter,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.08),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.cloud_upload_outlined,
+                            size: 24,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'اضغط هنا لإضافة صورة للصنف',
+                          style: TextStyle(
+                            fontFamily: 'Cairo',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'يمكنك التقاط صورة بالكاميرا أو الاختيار من المعرض',
+                          style: TextStyle(
+                            fontFamily: 'Cairo',
+                            fontSize: 11,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
       ),
     );
   }

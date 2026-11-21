@@ -4,26 +4,26 @@ import 'package:vatix/features/auth/domain/entities/user_entity.dart';
 import '../entities/customer_entity.dart';
 import '../entities/invite_code_entity.dart';
 
-/// [CustomersRepository] — عقد الـ Domain لإدارة العملاء وأكواد الدعوة للمورد
+/// [CustomersRepository] — Domain contract for managing customers and wholesaler invite codes
 abstract class CustomersRepository {
-  /// الاستماع اللحظي لقائمة التجار التابعين للمورد ومصفاة حسب حالتهم
+  /// Real-time stream of retailers associated with the wholesaler, filtered by status
   Stream<List<CustomerEntity>> watchCustomers({
     required String wholesalerId,
     required RetailerStatus status,
   });
 
-  /// تغيير حالة التاجر (قبول active / حظر blocked)
+  /// Updates customer status (activate active / block blocked)
   Future<ApiResult<Unit>> setCustomerStatus({
     required String customerId,
     required RetailerStatus status,
   });
 
-  /// الاستماع لكود الدعوة النشط حالياً للمورد
+  /// Real-time stream of the currently active invite code for the wholesaler
   Stream<InviteCodeEntity?> watchActiveInvite({
     required String wholesalerId,
   });
 
-  /// تدوير كود الدعوة (إنشاء كود جديد وتعطيل القديم عبر WriteBatch)
+  /// Rotates invite code (generates a new code and deactivates the old one via WriteBatch)
   Future<ApiResult<String>> rotateInvite({
     required String wholesalerId,
   });

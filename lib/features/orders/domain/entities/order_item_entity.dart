@@ -2,13 +2,13 @@ import 'package:vatix/core/utils/currency.dart';
 import 'package:vatix/core/utils/money_formatter.dart';
 import 'package:vatix/features/cart/domain/entities/cart_item_entity.dart';
 
-/// [OrderItemEntity] — لقطة ثابتة (Snapshot) لصنف داخل أمر الشراء
-/// تحفظ السعر والوحدة والكمية والإجمالي وقت إرسال الطلب ولا تتأثر بتغير أسعار الكتالوج لاحقاً
+/// [OrderItemEntity] — Immutable snapshot of an item inside a purchase order.
+/// Preserves price, unit, quantity, and line total at order placement time and is unaffected by later catalog changes.
 class OrderItemEntity {
   final String productId;
   final String name;
   final String unit;
-  final int unitPrice; // بأصغر وحدة (Subunits)
+  final int unitPrice; // In subunits
   final Currency currency;
   final int quantity;
   final int lineTotal; // unitPrice * quantity
@@ -27,7 +27,7 @@ class OrderItemEntity {
     this.sku,
   });
 
-  /// إنشاء لقطة طلب من عنصر السلة مباشرة
+  /// Creates an order item snapshot directly from a cart item
   factory OrderItemEntity.fromCartItem(CartItemEntity cartItem) {
     return OrderItemEntity(
       productId: cartItem.productId,
@@ -42,10 +42,10 @@ class OrderItemEntity {
     );
   }
 
-  /// سعر الوحدة منسقاً
+  /// Formatted unit price
   String get formattedUnitPrice => MoneyFormatter.format(unitPrice, currency);
 
-  /// إجمالي الصنف منسقاً
+  /// Formatted line total
   String get formattedLineTotal => MoneyFormatter.format(lineTotal, currency);
 
   OrderItemEntity copyWith({

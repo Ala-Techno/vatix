@@ -1,0 +1,26 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // صور المنتجات: products/{wholesalerId}/{fileName}
+    match /products/{wholesalerId}/{fileName} {
+      // أي مستخدم مسجل في التطبيق يستطيع قراءة وتحميل صور المنتجات
+      allow read: if request.auth != null;
+
+      // المورد فقط يرفع أو يعدل أو يحذف صور منتجاته
+      // يشترط أن يكون الملف صورة وبحجم أقصى 5 ميجابايت
+      allow write: if request.auth != null
+        && request.auth.uid == wholesalerId
+        && (request.resource == null || (
+             request.resource.size < 5 * 1024 * 1024
+             && request.resource.contentType.matches('image/.*')
+           ));
+    }
+
+    // افتراضياً: منع أي شيء آخر
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

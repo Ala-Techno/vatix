@@ -5,7 +5,7 @@ import 'package:vatix/core/utils/unit.dart';
 import '../entities/ledger_entry_entity.dart';
 import '../repositories/ledger_repository.dart';
 
-/// [RecordPaymentUseCase] — حالة استخدام تسجيل سداد تاجر (Task 5.4)
+/// [RecordPaymentUseCase] — Use case for recording a retailer payment (Task 5.4)
 class RecordPaymentUseCase {
   final LedgerRepository _repository;
 
@@ -47,4 +47,3 @@ class RecordPaymentUseCase {
     );
   }
 }
-

@@ -1,25 +1,25 @@
 import 'package:intl/intl.dart';
 import 'currency.dart';
 
-/// [MoneyFormatter] — تحويل وتنسيق المبالغ المالية لنظام Vatix.
-/// القواعد الصارمة:
-/// 1. المال يُخزَّن دائماً كـ int بأصغر وحدة (Subunits):
-///    - YER: القيمة كما هي (decimals: 0).
-///    - SAR / USD: القيمة × 100 (decimals: 2) مثل 12.50 ➔ 1250، 0.99 ➔ 99.
-/// 2. الرفض الصارم: السالب، الصفر (إلا بإذن صريح)، الكسور لـ YER، أكثر من خانتين لـ SAR/USD،
-///    النصوص غير الرقمية، أو تجاوز الحد الأقصى الآمن (تريليون).
-/// 3. دعم الأرقام العربية-الهندية (٠١٢٣٤٥٦٧٨٩) وتحويلها تلقائياً.
+/// [MoneyFormatter] — Currency conversion and formatting for Vatix system.
+/// Strict rules:
+/// 1. Money is always stored as int in smallest sub-units:
+///    - YER: Value as is (decimals: 0).
+///    - SAR / USD: Value × 100 (decimals: 2), e.g. 12.50 ➔ 1250, 0.99 ➔ 99.
+/// 2. Strict rejection: Negative values, zero (unless explicitly allowed), decimals for YER,
+///    more than 2 decimal places for SAR/USD, non-numeric strings, or exceeding safe maximum (1 trillion).
+/// 3. Automatic conversion of Eastern Arabic-Indic digits (٠١٢٣٤٥٦٧٨٩).
 class MoneyFormatter {
   const MoneyFormatter._();
 
-  /// سقف أمان أقصى للمبالغ بالوحدة الأساسية (تريليون) لمنع أخطاء الحقول
+  /// Maximum safety cap for main unit amounts (1 trillion) to prevent field overflows
   static const int maxMainUnitAmount = 1000000000000;
 
   // ─────────────────────────────────────────────────────────────────────────
-  // التحويل من إدخال المستخدم (نص) إلى int بأصغر وحدة
+  // Parsing from user input (String) to int in smallest sub-units
   // ─────────────────────────────────────────────────────────────────────────
 
-  /// تحويل آمن يرجع null عند أي خطأ في الإدخال أو الصيغة
+  /// Safe parse returning null on invalid input or format
   static int? tryParseToSubunits(
     String? input,
     Currency currency, {
@@ -33,7 +33,7 @@ class MoneyFormatter {
     }
   }
 
-  /// تحويل إدخال المستخدم إلى أصغر وحدة (int)، ويرمي [FormatException] عند وجود خطأ
+  /// Parses user input into sub-units (int), throws [FormatException] on invalid input
   static int parseToSubunits(
     String input,
     Currency currency, {
@@ -45,24 +45,24 @@ class MoneyFormatter {
       throw const FormatException('المبلغ فارغ');
     }
 
-    // رفض الإشارات السالبة قطعياً
+    // Strictly reject negative signs
     if (clean.contains('-')) {
       throw const FormatException('لا يمكن إدخال مبالغ سالبة');
     }
 
-    // إزالة فواصل الآلاف الشائعة (، أو ,) إذا كانت تفصل خانات الآلاف
+    // Strip thousands separators (, or ،)
     clean = _cleanThousandsSeparators(clean);
 
-    // توحيد الفاصلة العشرية العربية (٫) إلى النقطة الإنجليزية (.)
+    // Normalize Arabic decimal comma (٫) to period (.)
     clean = clean.replaceAll('٫', '.');
 
-    // التأكد من عدم وجود أكثر من فاصلة عشرية واحدة
+    // Ensure no more than one decimal dot
     final dotCount = '.'.allMatches(clean).length;
     if (dotCount > 1) {
       throw const FormatException('صيغة الرقم غير صحيحة (فواصل عشرية متعددة)');
     }
 
-    // التأكد أن النص يحتوي فقط على أرقام ونقطة واحدة كحد أقصى
+    // Ensure input contains digits and at most one decimal dot
     if (!RegExp(r'^\d+(\.\d+)?$').hasMatch(clean)) {
       throw const FormatException('المبلغ يحتوي على أحرف أو رموز غير صالحة');
     }
@@ -79,27 +79,27 @@ class MoneyFormatter {
     int subunits = 0;
 
     if (currency.decimals == 0) {
-      // ── ريال يمني: ممنوع وجود أي كسر أو خانة عشرية ──
+      // ── Yemeni Rial: No decimals allowed ──
       if (fractionalPartStr.isNotEmpty) {
         throw const FormatException('الريال اليمني لا يقبل كسوراً عشرية');
       }
       subunits = integerPart;
     } else {
-      // ── ريال سعودي / دولار: حد أقصى خانتان عشريتان ──
+      // ── Saudi Riyal / USD: Maximum 2 decimal digits ──
       if (fractionalPartStr.length > currency.decimals) {
         throw FormatException(
           'العملة (${currency.code}) لا تقبل أكثر من ${currency.decimals} خانات عشرية',
         );
       }
 
-      // ضبط الخانات العشرية إلى خانتين (مثلاً .5 تصبح 50)
+      // Pad fraction to decimals (e.g. .5 becomes 50)
       final paddedFraction = fractionalPartStr.padRight(currency.decimals, '0');
       final fractionPart = int.parse(paddedFraction);
 
       subunits = (integerPart * currency.multiplier) + fractionPart;
     }
 
-    // فحص الصفر
+    // Check zero condition
     if (!allowZero && subunits == 0) {
       throw const FormatException('يجب أن يكون المبلغ أكبر من الصفر');
     }
@@ -108,11 +108,11 @@ class MoneyFormatter {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // تنسيق int (أصغر وحدة) إلى نص للعرض في الواجهة
+  // Formatting int (sub-units) to display string in UI
   // ─────────────────────────────────────────────────────────────────────────
 
-  /// تنسيق المبلغ من أصغر وحدة إلى نص بفواصل الآلاف ورمز العملة
-  /// مثال:
+  /// Formats amount in sub-units into string with thousands separator and symbol
+  /// Example:
   /// - 1500 (YER) ➔ "1,500 ر.ي"
   /// - 1250 (SAR) ➔ "12.50 ر.س"
   /// - 99 (USD)   ➔ "0.99 $"
@@ -153,10 +153,10 @@ class MoneyFormatter {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // دوال مساعدة داخلية
+  // Internal helper methods
   // ─────────────────────────────────────────────────────────────────────────
 
-  /// تحويل الأرقام العربية-الهندية (٠-٩) والفارسية إلى أرقام ASCII (0-9)
+  /// Convert Eastern Arabic-Indic digits (٠-٩) and Persian digits to ASCII (0-9)
   static String _normalizeDigits(String input) {
     const easternArabic = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
     const persianArabic = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
@@ -170,19 +170,19 @@ class MoneyFormatter {
     return output;
   }
 
-  /// إزالة فواصل الآلاف عند وجودها بطريقة قياسية
+  /// Clean thousands separators standardly
   static String _cleanThousandsSeparators(String input) {
-    // إذا احتوى على فاصلة مثل "1,500.50" أو "1,000,000"
+    // If input contains both comma and dot (e.g. "1,500.50" or "1,000,000")
     if (input.contains(',') && input.contains('.')) {
       return input.replaceAll(',', '');
     }
-    // إذا كان يحتوي فقط على فواصل متبوعة بـ 3 أرقام (مثل "1,500" أو "10,000")
+    // If input contains only commas followed by 3 digits (e.g. "1,500" or "10,000")
     if (RegExp(r'^\d{1,3}(,\d{3})+$').hasMatch(input)) {
       return input.replaceAll(',', '');
     }
-    // إذا استخدمت الفاصلة كفاصلة عشرية (مثلاً "12,50") وليس هناك نقطة
+    // If comma was used as decimal separator (e.g. "12,50") and there is no dot
     if (input.contains(',') && !input.contains('.')) {
-      // إذا كان بعد الفاصلة 1 أو 2 خانات فقط ➔ نعاملها كفاصلة عشرية
+      // If 1 or 2 digits after comma ➔ treat as decimal separator
       final parts = input.split(',');
       if (parts.length == 2 && parts[1].length <= 2) {
         return '${parts[0]}.${parts[1]}';
@@ -191,4 +191,5 @@ class MoneyFormatter {
     return input;
   }
 }
+
 

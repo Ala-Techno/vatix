@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-/// [EmptyStateWidget] — مكوّن عرض الحالة الفارغة المتناسق مع Material 3 وتطبيق B2B
+/// [EmptyStateWidget] — Consistent empty state display widget adhering to Material 3 & B2B design
 class EmptyStateWidget extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -31,7 +31,7 @@ class EmptyStateWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // أيقونة دائرية محاطة بهالة لونية ناعمة
+            // Circular icon with soft ambient halo
             Container(
               width: 90,
               height: 90,
@@ -51,7 +51,7 @@ class EmptyStateWidget extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // عنوان الحالة
+            // State title
             Text(
               title,
               textAlign: TextAlign.center,
@@ -63,7 +63,7 @@ class EmptyStateWidget extends StatelessWidget {
             ),
             const SizedBox(height: 8),
 
-            // وصف توضيحي
+            // Explanatory subtitle
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 320),
               child: Text(
@@ -76,7 +76,7 @@ class EmptyStateWidget extends StatelessWidget {
               ),
             ),
 
-            // زر اختياري لإجراء سريع
+            // Optional action button
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: 24),
               OutlinedButton.icon(

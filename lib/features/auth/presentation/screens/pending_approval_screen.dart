@@ -4,8 +4,8 @@ import 'package:vatix/core/theme/app_colors.dart';
 import 'package:vatix/core/widgets/confirmation_dialog.dart';
 import 'package:vatix/features/auth/presentation/providers/auth_provider.dart';
 
-/// [PendingApprovalScreen] — شاشة «بانتظار موافقة المورد»
-/// تستمع لحظياً للـ Stream — ستنتقل تلقائياً فور قيام المورد بتفعيل الحساب
+/// [PendingApprovalScreen] — "Pending wholesaler approval" screen
+/// Listens to real-time stream — automatically transitions once wholesaler activates account
 class PendingApprovalScreen extends StatelessWidget {
   const PendingApprovalScreen({super.key});
 
@@ -24,7 +24,7 @@ class PendingApprovalScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // أيقونة الحالة الدائرية مع إطار متناسق
+                // Circular status icon with subtle border
                 Center(
                   child: Container(
                     width: 100,
@@ -56,7 +56,7 @@ class PendingApprovalScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
 
-                // بطاقة بيانات التاجر والمنشأة
+                // Retailer business info card
                 if (user != null) ...[
                   Container(
                     margin: const EdgeInsets.symmetric(vertical: 16),

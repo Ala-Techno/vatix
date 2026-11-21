@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart';
 import '../../domain/entities/order_entity.dart';
 import '../../domain/repositories/orders_repository.dart';
 
-/// [WholesalerOrdersProvider] — يدير حالة الطلبات الواردة للمورد ولوحة التحكم
+/// [WholesalerOrdersProvider] — Manages incoming orders state for wholesaler and dashboard
+/// Uses live Streams for both pending orders and filtered orders list
 class WholesalerOrdersProvider extends ChangeNotifier {
   final OrdersRepository _repository;
 
@@ -12,44 +13,43 @@ class WholesalerOrdersProvider extends ChangeNotifier {
 
   String? _wholesalerId;
 
-  // 1. الطلبات المعلقة (Stream حي مع limit 50 للـ Dashboard والـ Badge)
+  // 1. Pending orders (Live Stream for Badge and Dashboard)
   List<OrderEntity> _pendingOrders = [];
   bool _isLoadingPending = true;
   StreamSubscription<List<OrderEntity>>? _pendingOrdersSub;
 
-  // 2. قائمة الطلبات المفلترة والمقسّمة صفحات (Pagination)
-  OrderStatus? _selectedStatus; // null تعني "الكل"
+  // 2. Filtered orders list — Live Stream (replaces Pagination)
+  OrderStatus? _selectedStatus; // null means "All"
   List<OrderEntity> _ordersList = [];
   bool _isLoadingOrders = false;
-  bool _isLoadingMore = false;
-  bool _hasMore = true;
-  dynamic _lastDocument;
   String? _errorMessage;
+  StreamSubscription<List<OrderEntity>>? _ordersListSub;
 
   // Getters
   List<OrderEntity> get pendingOrders => _pendingOrders;
   int get pendingCount => _pendingOrders.length;
-  String get pendingCountBadge => _pendingOrders.length >= 50 ? '50+' : '${_pendingOrders.length}';
+  String get pendingCountBadge =>
+      _pendingOrders.length >= 50 ? '50+' : '${_pendingOrders.length}';
   bool get isLoadingPending => _isLoadingPending;
 
   List<OrderEntity> get ordersList => _ordersList;
   OrderStatus? get selectedStatus => _selectedStatus;
   bool get isLoadingOrders => _isLoadingOrders;
-  bool get isLoadingMore => _isLoadingMore;
-  bool get hasMore => _hasMore;
+  bool get isLoadingMore => false; // Live stream does not need isLoadingMore
+  bool get hasMore => false; // Live stream fetches orders in one subscription
   String? get errorMessage => _errorMessage;
 
-  /// آخر 5 طلبات واردة للـ Dashboard (Task 4.2.3)
+  /// Latest 5 incoming orders for Dashboard (Task 4.2.3)
   List<OrderEntity> get recentOrders => _pendingOrders.take(5).toList();
 
-  /// تهيئة المستمع اللحظي للـ pending orders للمورد
+  /// Initializes both real-time listeners for the wholesaler
   void init(String wholesalerId) {
     if (_wholesalerId == wholesalerId) return;
     _wholesalerId = wholesalerId;
 
+    // — Stream 1: Pending orders
     _isLoadingPending = true;
     _pendingOrdersSub?.cancel();
-
     _pendingOrdersSub = _repository
         .watchPendingOrdersForWholesaler(wholesalerId: wholesalerId, limit: 50)
         .listen(
@@ -65,74 +65,66 @@ class WholesalerOrdersProvider extends ChangeNotifier {
       },
     );
 
-    // استخدام Future.microtask لضمان عدم استدعاء notifyListeners أثناء دورة البناء (Build Phase)
-    Future.microtask(() {
-      loadOrders(status: _selectedStatus, refresh: true);
-    });
+    // — Stream 2: Filtered orders list
+    _startOrdersStream(status: _selectedStatus);
   }
 
-  /// تغيير فلتر الحالة وتحميل الطلبات
+  /// Starts (or restarts) live Stream for orders list based on status filter
+  void _startOrdersStream({OrderStatus? status}) {
+    if (_wholesalerId == null) return;
+
+    _isLoadingOrders = true;
+    _errorMessage = null;
+    _ordersList = [];
+    notifyListeners();
+
+    _ordersListSub?.cancel();
+    _ordersListSub = _repository
+        .watchWholesalerOrders(
+          wholesalerId: _wholesalerId!,
+          status: status,
+          limit: 50,
+        )
+        .listen(
+      (orders) {
+        _ordersList = orders;
+        _isLoadingOrders = false;
+        _errorMessage = null;
+        notifyListeners();
+      },
+      onError: (e) {
+        _errorMessage = e.toString();
+        _isLoadingOrders = false;
+        notifyListeners();
+        if (kDebugMode) {
+          debugPrint('WholesalerOrdersProvider orders error: $e');
+        }
+      },
+    );
+  }
+
+  /// Updates status filter — automatically restarts a fresh stream
   void setStatusFilter(OrderStatus? status) {
     if (_selectedStatus == status) return;
     _selectedStatus = status;
-    loadOrders(status: status, refresh: true);
+    _startOrdersStream(status: status);
   }
 
-  /// جلب الطلبات الواردة مع الـ Pagination
-  Future<void> loadOrders({OrderStatus? status, bool refresh = false}) async {
-    if (_wholesalerId == null) return;
-    if (_isLoadingOrders || (_isLoadingMore && !refresh)) return;
-
-    if (refresh) {
-      _isLoadingOrders = true;
-      _errorMessage = null;
-      _hasMore = true;
-      _lastDocument = null;
-      notifyListeners();
-    } else {
-      if (!_hasMore) return;
-      _isLoadingMore = true;
-      notifyListeners();
-    }
-
-    final result = await _repository.getWholesalerOrdersPage(
-      wholesalerId: _wholesalerId!,
-      status: status ?? _selectedStatus,
-      limit: 20,
-      startAfterDocument: refresh ? null : _lastDocument,
-    );
-
-    result.when(
-      success: (pageResult) {
-        if (refresh) {
-          _ordersList = pageResult.orders;
-        } else {
-          _ordersList.addAll(pageResult.orders);
-        }
-        _lastDocument = pageResult.lastDocument;
-        _hasMore = pageResult.hasMore;
-        _isLoadingOrders = false;
-        _isLoadingMore = false;
-        notifyListeners();
-      },
-      failure: (failure) {
-        _errorMessage = failure.message;
-        _isLoadingOrders = false;
-        _isLoadingMore = false;
-        notifyListeners();
-      },
-    );
-  }
-
-  /// سحب للتحديث
+  /// Pull to refresh — live stream doesn't strictly need it, but retained for UI compatibility
   Future<void> refreshOrders() async {
-    await loadOrders(status: _selectedStatus, refresh: true);
+    _startOrdersStream(status: _selectedStatus);
+  }
+
+  /// Backwards compatibility for any legacy loadOrders call from scroll listener
+  Future<void> loadOrders({OrderStatus? status, bool refresh = false}) async {
+    if (refresh) await refreshOrders();
+    // Live stream: no pagination needed
   }
 
   @override
   void dispose() {
     _pendingOrdersSub?.cancel();
+    _ordersListSub?.cancel();
     super.dispose();
   }
 }
-

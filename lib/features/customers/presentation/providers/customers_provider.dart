@@ -14,7 +14,7 @@ class CustomersProvider extends ChangeNotifier {
 
   String? _wholesalerId;
 
-  // القوائم اللحظية
+  // Real-time lists
   List<CustomerEntity> _pendingCustomers = [];
   List<CustomerEntity> _activeCustomers = [];
   List<CustomerEntity> _blockedCustomers = [];
@@ -26,7 +26,7 @@ class CustomersProvider extends ChangeNotifier {
   bool _isActionLoading = false;
   String? _errorMessage;
 
-  // الاشتراكات اللحظية
+  // Real-time subscriptions
   StreamSubscription<List<CustomerEntity>>? _pendingSub;
   StreamSubscription<List<CustomerEntity>>? _activeSub;
   StreamSubscription<List<CustomerEntity>>? _blockedSub;
@@ -48,7 +48,7 @@ class CustomersProvider extends ChangeNotifier {
   bool get isActionLoading => _isActionLoading;
   String? get errorMessage => _errorMessage;
 
-  /// تهيئة المستمعين اللحظيين لبيانات المورد
+  /// Initializes real-time listeners for wholesaler data
   void init(String wholesalerId) {
     if (_wholesalerId == wholesalerId) return;
     _wholesalerId = wholesalerId;
@@ -57,7 +57,7 @@ class CustomersProvider extends ChangeNotifier {
     _isLoadingInvite = true;
     _cancelSubscriptions();
 
-    // 1. الاستماع لطلبات الانضمام (pending)
+    // 1. Listen for join requests (pending)
     _pendingSub = _repository
         .watchCustomers(wholesalerId: wholesalerId, status: RetailerStatus.pending)
         .listen(
@@ -73,7 +73,7 @@ class CustomersProvider extends ChangeNotifier {
       },
     );
 
-    // 2. الاستماع للعملاء المفعّلين (active)
+    // 2. Listen for active customers
     _activeSub = _repository
         .watchCustomers(wholesalerId: wholesalerId, status: RetailerStatus.active)
         .listen(
@@ -89,7 +89,7 @@ class CustomersProvider extends ChangeNotifier {
       },
     );
 
-    // 3. الاستماع للعملاء الموقوفين (blocked)
+    // 3. Listen for blocked customers
     _blockedSub = _repository
         .watchCustomers(wholesalerId: wholesalerId, status: RetailerStatus.blocked)
         .listen(
@@ -105,7 +105,7 @@ class CustomersProvider extends ChangeNotifier {
       },
     );
 
-    // 4. الاستماع لكود الدعوة النشط
+    // 4. Listen for active invite code
     _inviteSub = _repository
         .watchActiveInvite(wholesalerId: wholesalerId)
         .listen(
@@ -122,17 +122,17 @@ class CustomersProvider extends ChangeNotifier {
     );
   }
 
-  /// قبول طلب انضمام التاجر (تفعيله)
+  /// Accepts customer join request (activates customer)
   Future<bool> acceptCustomer(String customerId) async {
     return _changeStatus(customerId, RetailerStatus.active);
   }
 
-  /// حظر تاجر
+  /// Blocks a customer
   Future<bool> blockCustomer(String customerId) async {
     return _changeStatus(customerId, RetailerStatus.blocked);
   }
 
-  /// إلغاء حظر تاجر وإعادة تفعيله
+  /// Unblocks and reactivates a customer
   Future<bool> unblockCustomer(String customerId) async {
     return _changeStatus(customerId, RetailerStatus.active);
   }
@@ -158,7 +158,7 @@ class CustomersProvider extends ChangeNotifier {
     return true;
   }
 
-  /// تدوير كود الدعوة (تعطيل الكود القديم وإنشاء كود جديد)
+  /// Rotates invite code (deactivates old code and creates a new one)
   Future<String?> rotateInvite() async {
     if (_wholesalerId == null) return null;
 

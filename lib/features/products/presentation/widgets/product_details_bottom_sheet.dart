@@ -1,13 +1,13 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vatix/core/theme/app_colors.dart';
+import 'package:vatix/core/widgets/vatix_product_image.dart';
 import 'package:vatix/features/cart/presentation/providers/cart_provider.dart';
 import '../../domain/entities/product_entity.dart';
 
-/// [ProductDetailsBottomSheet] — نافذة تفاصيل الصنف للتاجر
-/// تعرض: الاسم، السعر بالعملة المعتمدة، وحدة البيع، كود الصنف، الوصف، والتوفر
-/// وتتيح اختيار الكمية والإضافة لسلة المشتريات (Task 3.1.5)
+/// [ProductDetailsBottomSheet] — Retailer product details bottom sheet
+/// Displays: name, price in authorized currency, sale unit, SKU, description, and availability
+/// Allows quantity selection and adding to cart (Task 3.1.5)
 class ProductDetailsBottomSheet extends StatefulWidget {
   final ProductEntity product;
 
@@ -129,7 +129,7 @@ class _ProductDetailsBottomSheetState extends State<ProductDetailsBottomSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── مقبض السحب العلوي ──────────────────────────────────────
+          // ── Top drag handle ──────────────────────────────────────
           Center(
             child: Container(
               width: 40,
@@ -142,42 +142,28 @@ class _ProductDetailsBottomSheetState extends State<ProductDetailsBottomSheet> {
             ),
           ),
 
-          // ── المحتوى القابل للتمرير ──────────────────────────────────
+          // ── Scrollable content ──────────────────────────────────
           Flexible(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // صورة المنتج (إن توفرت)
+                  // Product image (if available)
                   if (product.imageUrl != null &&
                       product.imageUrl!.isNotEmpty) ...[
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        height: 200,
-                        width: double.infinity,
-                        color: AppColors.surfaceVariant,
-                        child: CachedNetworkImage(
-                          imageUrl: product.imageUrl!,
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) => const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          errorWidget: (_, __, ___) => const Center(
-                            child: Icon(
-                              Icons.broken_image_rounded,
-                              size: 48,
-                              color: AppColors.textHint,
-                            ),
-                          ),
-                        ),
-                      ),
+                    VatixProductImage(
+                      imageUrl: product.imageUrl,
+                      height: 200,
+                      width: double.infinity,
+                      radius: 16,
+                      fit: BoxFit.cover,
+                      isAvailable: product.isAvailable,
                     ),
                     const SizedBox(height: 16),
                   ],
 
-                  // اسم المنتج
+                  // Product name
                   Text(
                     product.name,
                     style: const TextStyle(
@@ -190,7 +176,7 @@ class _ProductDetailsBottomSheetState extends State<ProductDetailsBottomSheet> {
                   ),
                   const SizedBox(height: 10),
 
-                  // شارات المنتج: الوحدة، الصنف، والـ SKU
+                  // Product badges: unit, category, and SKU
                   Wrap(
                     spacing: 8,
                     runSpacing: 6,
@@ -219,7 +205,7 @@ class _ProductDetailsBottomSheetState extends State<ProductDetailsBottomSheet> {
                   const Divider(height: 1),
                   const SizedBox(height: 16),
 
-                  // السعر وحالة التوفر
+                  // Price and availability status
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -247,18 +233,19 @@ class _ProductDetailsBottomSheetState extends State<ProductDetailsBottomSheet> {
                           ),
                         ],
                       ),
+                      // Availability and stock status
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: product.isAvailable
+                          color: (product.isAvailable && (product.stockQuantity == null || product.stockQuantity! > 0))
                               ? AppColors.statusActiveBg
                               : AppColors.statusBlockedBg,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: product.isAvailable
+                            color: (product.isAvailable && (product.stockQuantity == null || product.stockQuantity! > 0))
                                 ? AppColors.statusActive.withValues(alpha: 0.3)
                                 : AppColors.statusBlocked
                                     .withValues(alpha: 0.3),
@@ -268,23 +255,25 @@ class _ProductDetailsBottomSheetState extends State<ProductDetailsBottomSheet> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              product.isAvailable
+                              (product.isAvailable && (product.stockQuantity == null || product.stockQuantity! > 0))
                                   ? Icons.check_circle_rounded
                                   : Icons.cancel_rounded,
                               size: 14,
-                              color: product.isAvailable
+                              color: (product.isAvailable && (product.stockQuantity == null || product.stockQuantity! > 0))
                                   ? AppColors.statusActive
                                   : AppColors.statusBlocked,
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              product.isAvailable
-                                  ? 'متوفر للطلب'
+                              (product.isAvailable && (product.stockQuantity == null || product.stockQuantity! > 0))
+                                  ? (product.stockQuantity != null
+                                      ? 'متوفر: ${product.stockQuantity} ${product.unit}'
+                                      : 'متوفر للطلب')
                                   : 'غير متوفر حالياً',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                color: product.isAvailable
+                                color: (product.isAvailable && (product.stockQuantity == null || product.stockQuantity! > 0))
                                     ? AppColors.statusActive
                                     : AppColors.statusBlocked,
                                 fontFamily: 'Cairo',
@@ -296,7 +285,7 @@ class _ProductDetailsBottomSheetState extends State<ProductDetailsBottomSheet> {
                     ],
                   ),
 
-                  // وصف المنتج (إن وجد)
+                  // Product description (if present)
                   if (product.description != null &&
                       product.description!.trim().isNotEmpty) ...[
                     const SizedBox(height: 16),
@@ -327,8 +316,8 @@ class _ProductDetailsBottomSheetState extends State<ProductDetailsBottomSheet> {
                   const Divider(height: 1),
                   const SizedBox(height: 20),
 
-                  // ── محدد الكمية وزر الإضافة للسلة (Task 3.1.5) ─────────────
-                  if (product.isAvailable) ...[
+                  // ── Quantity selector & add-to-cart button (Task 3.1.5) ─────
+                  if (product.isAvailable && (product.stockQuantity == null || product.stockQuantity! > 0)) ...[
                     Row(
                       children: [
                         const Text(
@@ -342,7 +331,7 @@ class _ProductDetailsBottomSheetState extends State<ProductDetailsBottomSheet> {
                         ),
                         const Spacer(),
 
-                        // أزرار التحكم بالكمية
+                        // Quantity control buttons
                         Container(
                           decoration: BoxDecoration(
                             color: AppColors.surfaceVariant,
@@ -375,7 +364,7 @@ class _ProductDetailsBottomSheetState extends State<ProductDetailsBottomSheet> {
                               ),
                               IconButton(
                                 icon: const Icon(Icons.add_rounded, size: 20),
-                                onPressed: _quantity < 999 ? _increment : null,
+                                onPressed: (_quantity < (product.stockQuantity ?? 999)) ? _increment : null,
                                 constraints: const BoxConstraints(
                                   minWidth: 44,
                                   minHeight: 44,
@@ -388,34 +377,39 @@ class _ProductDetailsBottomSheetState extends State<ProductDetailsBottomSheet> {
                     ),
                     const SizedBox(height: 20),
 
-                    // زر الإضافة للسلة
+                    // Add to cart button
                     SizedBox(
-                      height: 50,
+                      height: 52,
+                      width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: _addToCart,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        icon: const Icon(Icons.add_shopping_cart_rounded,
-                            size: 20),
-                        label: Text(
-                          isAlreadyInCart
-                              ? 'تحديث الكمية في السلة'
-                              : 'إضافة إلى السلة',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            fontFamily: 'Cairo',
+                        icon: const Icon(Icons.add_shopping_cart_rounded, size: 20),
+                        label: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            isAlreadyInCart
+                                ? 'تحديث الكمية في السلة'
+                                : 'إضافة إلى السلة',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'Cairo',
+                              height: 1.2,
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ] else ...[
-                    // تنبيه عدم التوفر
+                    // Unavailable alert
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
@@ -452,7 +446,7 @@ class _ProductDetailsBottomSheetState extends State<ProductDetailsBottomSheet> {
 
                   const SizedBox(height: 12),
 
-                  // زر الإغلاق
+                  // Close button
                   SizedBox(
                     height: 46,
                     child: OutlinedButton(

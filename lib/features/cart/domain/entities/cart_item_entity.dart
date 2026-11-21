@@ -2,14 +2,14 @@ import 'package:vatix/core/utils/currency.dart';
 import 'package:vatix/core/utils/money_formatter.dart';
 import 'package:vatix/features/products/domain/entities/product_entity.dart';
 
-/// [CartItemEntity] — لقطة ثابتة (Snapshot) لعنصر داخل سلة المشتريات
-/// تحفظ بيانات الصنف وسعر الوحدة والكمية والإجمالي بالأصغر وحدة
+/// [CartItemEntity] — Immutable snapshot of an item inside the shopping cart
+/// Stores product info, unit price, quantity, and line total in smallest sub-units
 class CartItemEntity {
   final String productId;
   final String wholesalerId;
   final String name;
   final String unit;
-  final int unitPrice; // بأصغر وحدة (Subunits) حسب العملة
+  final int unitPrice; // In smallest sub-units based on currency
   final Currency currency;
   final int quantity;
   final String? imageUrl;
@@ -29,7 +29,7 @@ class CartItemEntity {
     this.sku,
   });
 
-  /// إنشاء لقطة سلة مباشرة من منتج الكتالوج
+  /// Create cart item snapshot directly from product entity
   factory CartItemEntity.fromProduct(ProductEntity product, {int quantity = 1}) {
     return CartItemEntity(
       productId: product.id,
@@ -45,13 +45,13 @@ class CartItemEntity {
     );
   }
 
-  /// إجمالي قيمة البند = سعر الوحدة × الكمية (Subunits)
+  /// Line total = unitPrice * quantity (in sub-units)
   int get lineTotal => unitPrice * quantity;
 
-  /// سعر الوحدة منسقاً مع رمز العملة (مثال: 18,500 ر.ي)
+  /// Formatted unit price with currency symbol (e.g. 18,500 YER)
   String get formattedUnitPrice => MoneyFormatter.format(unitPrice, currency);
 
-  /// إجمالي البند منسقاً مع رمز العملة
+  /// Formatted line total with currency symbol
   String get formattedLineTotal => MoneyFormatter.format(lineTotal, currency);
 
   CartItemEntity copyWith({
