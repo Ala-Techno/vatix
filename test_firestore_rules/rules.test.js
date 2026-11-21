@@ -176,22 +176,22 @@ function unauthenticated() {
   return testEnv.unauthenticatedContext().firestore();
 }
 function asWholesaler1() {
-  return testEnv.authenticatedContext(W1_UID, { uid: W1_UID }).firestore();
+  return testEnv.authenticatedContext(W1_UID, { sub: W1_UID }).firestore();
 }
 function asWholesaler2() {
-  return testEnv.authenticatedContext(W2_UID, { uid: W2_UID }).firestore();
+  return testEnv.authenticatedContext(W2_UID, { sub: W2_UID }).firestore();
 }
 function asActiveRetailer() {
-  return testEnv.authenticatedContext(R_ACTIVE_UID, { uid: R_ACTIVE_UID }).firestore();
+  return testEnv.authenticatedContext(R_ACTIVE_UID, { sub: R_ACTIVE_UID }).firestore();
 }
 function asPendingRetailer() {
-  return testEnv.authenticatedContext(R_PENDING_UID, { uid: R_PENDING_UID }).firestore();
+  return testEnv.authenticatedContext(R_PENDING_UID, { sub: R_PENDING_UID }).firestore();
 }
 function asBlockedRetailer() {
-  return testEnv.authenticatedContext(R_BLOCKED_UID, { uid: R_BLOCKED_UID }).firestore();
+  return testEnv.authenticatedContext(R_BLOCKED_UID, { sub: R_BLOCKED_UID }).firestore();
 }
 function asOtherRetailer() {
-  return testEnv.authenticatedContext(R_OTHER_UID, { uid: R_OTHER_UID }).firestore();
+  return testEnv.authenticatedContext(R_OTHER_UID, { sub: R_OTHER_UID }).firestore();
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -309,7 +309,7 @@ describe("users/{uid}", () => {
   describe("create (retailer self-registration)", () => {
     it("✅ new user can register as pending retailer with valid invite", async () => {
       const newUid = "new-retailer-uid";
-      const ctx = testEnv.authenticatedContext(newUid, { uid: newUid });
+      const ctx = testEnv.authenticatedContext(newUid, { sub: newUid });
       await assertSucceeds(
         ctx.firestore().doc(`users/${newUid}`).set({
           role: "retailer",
@@ -327,7 +327,7 @@ describe("users/{uid}", () => {
     });
     it("❌ cannot register with inactive invite code", async () => {
       const newUid = "new-retailer-2";
-      const ctx = testEnv.authenticatedContext(newUid, { uid: newUid });
+      const ctx = testEnv.authenticatedContext(newUid, { sub: newUid });
       await assertFails(
         ctx.firestore().doc(`users/${newUid}`).set({
           role: "retailer", status: "pending", wholesalerId: W1_UID,
@@ -339,7 +339,7 @@ describe("users/{uid}", () => {
     });
     it("❌ cannot register as wholesaler role", async () => {
       const newUid = "new-wholesaler-attempt";
-      const ctx = testEnv.authenticatedContext(newUid, { uid: newUid });
+      const ctx = testEnv.authenticatedContext(newUid, { sub: newUid });
       await assertFails(
         ctx.firestore().doc(`users/${newUid}`).set({
           role: "wholesaler", status: "active", wholesalerId: null,
@@ -349,7 +349,7 @@ describe("users/{uid}", () => {
     });
     it("❌ cannot self-register with status active (must be pending)", async () => {
       const newUid = "self-activate-attempt";
-      const ctx = testEnv.authenticatedContext(newUid, { uid: newUid });
+      const ctx = testEnv.authenticatedContext(newUid, { sub: newUid });
       await assertFails(
         ctx.firestore().doc(`users/${newUid}`).set({
           role: "retailer", status: "active", wholesalerId: W1_UID,

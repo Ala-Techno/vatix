@@ -79,7 +79,9 @@ service cloud.firestore {
              == request.resource.data.wholesalerId;
 
       // User updates only their personal profile fields (cannot touch role, wholesaler, or status)
+      // Requires at least one affected field and strictly within allowed personal keys
       allow update: if request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().size() > 0
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['businessName','ownerName','phone','city','address','avatarUrl','updatedAt']);
 
